@@ -1,3 +1,8 @@
+from typing import (
+    Dict,
+    Any,
+)
+
 import base64
 import random
 import uuid
@@ -10,7 +15,7 @@ import praw.models
 
 
 _missing = object()
-users = {}
+users: Dict[str, Any] = {}
 
 
 def generate_reddit_id():
