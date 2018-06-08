@@ -50,7 +50,8 @@ dev_helper_deps = [
 setup(
     name='tor',
     version=__version__,
-    description='A bot that handles moderating and scoring in /r/TranscribersOfReddit',
+    description='A bot that handles moderating and scoring in '
+                '/r/TranscribersOfReddit',
     long_description=long_description(),
     url='https://github.com/GrafeasGroup/tor',
     author='Joe Kaufeld',
