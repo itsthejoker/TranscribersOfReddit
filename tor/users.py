@@ -106,11 +106,3 @@ class User(object):
         self.user_data = dict()
         self.user_data.update({'username': self.username})
         return self.user_data
-
-
-if __name__ == '__main__':
-    pam = User('pam')
-    print(pam)
-    pam.update('transcriptions', pam.get('transcriptions', 1) + 1)
-    print(pam.get('transcriptions'))
-    pam.save()
