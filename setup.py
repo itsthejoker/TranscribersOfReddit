@@ -36,11 +36,14 @@ def long_description():
 
 
 testing_deps = [
+    'sh',
     'pytest',
     'pytest-cov',
+    'loremipsum',
 ]
 dev_helper_deps = [
     'better-exceptions',
+    'mypy',
 ]
 
 
@@ -71,8 +74,8 @@ setup(
     test_suite='test',
     entry_points={
         'console_scripts': [
-            'tor-moderator = tor.main:main',
-            'tor-flair-backup = tor.backup:main',
+            # 'tor-moderator = tor.main:main',
+            # 'tor-flair-backup = tor.backup:main',
         ],
     },
     extras_require={
@@ -80,11 +83,14 @@ setup(
     },
     tests_require=testing_deps,
     install_requires=[
-        'tor_core',
-        'sh',
         'praw',
+        'youtube',
+        'slackclient',
+        'redis<3.0.0',
+        'celery[redis]',
+        'bugsnag',
     ],
     dependency_links=[
-        'git+https://github.com/GrafeasGroup/tor_core.git@master#egg=tor_core-0',
+        'https://github.com/itsthejoker/youtube/archive/master.tar.gz#egg=youtube-0.0.1', # noqa
     ],
 )
