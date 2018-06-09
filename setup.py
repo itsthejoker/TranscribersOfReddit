@@ -85,7 +85,7 @@ setup(
     tests_require=testing_deps,
     install_requires=[
         'praw',
-        'youtube',
+        'youtube==0.0.1',
         'tor_core',
         'slackclient',
         'redis<3.0.0',
@@ -93,7 +93,7 @@ setup(
         'bugsnag',
     ],
     dependency_links=[
-        'https://github.com/itsthejoker/youtube/archive/master.tar.gz#egg=youtube', # noqa
+        'https://github.com/itsthejoker/youtube/archive/master.tar.gz#egg=youtube-0.0.1', # noqa
         'https://github.com/GrafeasGroup/tor_core/archive/celery-rewrite.tar.gz#egg=tor_core-1.0.0',  # noqa
     ],
 )
