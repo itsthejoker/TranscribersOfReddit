@@ -125,6 +125,7 @@ def process_admin_command(self, author, subject, body, message_id):
       message.
     """
     send_bot_message = signature('tor.role_moderator.tasks.send_bot_message')
+    send_to_slack = signature('tor.role_anyone.tasks.send_to_slack')
 
     # It only makes sense to have this be scoped to /r/ToR
     config = Config.subreddit('TranscribersOfReddit')
@@ -132,7 +133,12 @@ def process_admin_command(self, author, subject, body, message_id):
 
     if not config.commands.allows(command_name).by_user(author):
         log.warning(f'DENIED: {author} is not allowed to call {command_name}')
-        # TODO: Send to slack
+        send_to_slack.delay(
+            f':rotating_light::rotating_light: DENIED! '
+            f':rotating_light::rotating_light:\n\n{author} '
+            f'tried to `{command_name}` but was not permitted to do so',
+            '#general',
+        )
         return
 
     log.info(f'{author} called {command_name} with args {repr(body)}')
@@ -231,7 +237,7 @@ def process_mod_intervention(comment: Comment):
         f':rotating_light::rotating_light: {title} '
         f':rotating_light::rotating_light:\n\n'
         f'{message}',
-        '#general'
+        '#general',
     )
 
 
