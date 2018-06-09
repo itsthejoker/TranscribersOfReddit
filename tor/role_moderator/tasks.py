@@ -251,6 +251,8 @@ def process_comment(self, comment_id):
                                        'accept_code_of_conduct')
     unhandled_comment = signature('tor.role_anyone.tasks.unhandled_comment')
     claim_post = signature('tor.role_moderator.tasks.claim_post')
+    # mark_post_complete = signature('tor.role_moderator.tasks.'
+    #                                'mark_task_complete')
 
     reply = self.reddit.comment(comment_id)
 
@@ -282,9 +284,8 @@ def process_comment(self, comment_id):
             )
 
     elif is_claimed_post_response(reply.parent()):
-        if re.search(r'\b(?:done|deno)\b', body):  # pragma: no coverage
-            # TODO: Fill out completed post scenario and remove pragma directive
-            # mark_post_complete.delay(reply.id)
+        if re.search(r'\b(?:done|deno)\b', body):
+            # mark_post_complete.delay(comment_id=reply.id)
             pass
         elif re.search(r'(?=<^|\W)!override\b', body):  # pragma: no coverage
             # TODO: Fill out override scenario and remove pragma directive
@@ -321,6 +322,26 @@ def claim_post(self, comment_id, verify=True, first_claim=False):
         post_comment(repliable=comment, body=bot_msg['claim_success'])
     else:
         post_comment(repliable=comment, body=bot_msg['claim_success'])
+
+
+@app.task(bind=True, ignore_result=True, base=Task)
+def mark_task_complete(self, comment_id):
+    update_post_flair = signature('tor.role_moderator.tasks.update_post_flair')
+
+    comment = self.reddit.comment(comment_id)
+
+    if not self.redis.sismember('accepted_CoC', comment.author.name):
+        raise InvalidState(f'Unable to complete post without first accepting '
+                           f'the code of conduct')
+
+    if not is_claimed_post_response(comment.parent(), override=True):
+        raise InvalidState(f'Unable to claim a post that is not claimable. '
+                           f'https://redd.it/{comment.id}')
+
+    # TODO: Check if transcription is actually completed by the user
+    # saying 'done'
+
+    update_post_flair.delay(comment.submission.id, 'Completed!')
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
