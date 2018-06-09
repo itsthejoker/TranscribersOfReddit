@@ -234,18 +234,19 @@ class ProcessDoneCommentTest(unittest.TestCase):
 
         mock_reddit.comment.assert_any_call(self.comment.id)
 
+    @patch('tor.role_moderator.tasks.signature', side_effect=signature)
     @patch('tor.role_moderator.tasks.process_comment.reddit')
-    def test_done(self, mock_reddit):
+    def test_done(self, mock_reddit, mock_signature):
         mock_reddit.comment = MagicMock(name='comment',
                                         return_value=self.comment)
-
         process_comment(self.comment.id)
         # TODO: more to come when actual functionality is built-out
 
         mock_reddit.comment.assert_any_call(self.comment.id)
 
+    @patch('tor.role_moderator.tasks.signature', side_effect=signature)
     @patch('tor.role_moderator.tasks.process_comment.reddit')
-    def test_override_as_admin(self, mock_reddit):
+    def test_override_as_admin(self, mock_reddit, mock_signature):
         mock_reddit.comment = MagicMock(name='comment',
                                         return_value=self.comment)
 
@@ -257,8 +258,9 @@ class ProcessDoneCommentTest(unittest.TestCase):
 
         mock_reddit.comment.assert_any_call(self.comment.id)
 
+    @patch('tor.role_moderator.tasks.signature', side_effect=signature)
     @patch('tor.role_moderator.tasks.process_comment.reddit')
-    def test_override_as_anon(self, mock_reddit):
+    def test_override_as_anon(self, mock_reddit, mock_signature):
         mock_reddit.comment = MagicMock(name='comment',
                                         return_value=self.comment)
 
