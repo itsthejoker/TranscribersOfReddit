@@ -6,11 +6,11 @@ class Config:
     enable_utc = True
     task_default_queue = 'default'
     beat_schedule: Dict[str, Dict[str, Any]] = {
-        'check-inbox': {
+        'tor.check-inbox': {
             'task': 'tor.role_moderator.tasks.check_inbox',
             'schedule': 90,  # seconds
         },
-        'check-subreddit-feeds': {
+        'tor.check-subreddit-feeds': {
             'task': 'tor.role_anyone.tasks.check_new_feeds',
             'schedule': 30,  # seconds
         },
