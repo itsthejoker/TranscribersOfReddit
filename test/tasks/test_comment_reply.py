@@ -230,8 +230,13 @@ class ProcessDoneCommentTest(unittest.TestCase):
 
         self.comment.body = 'deno'
         process_comment(self.comment.id)
+        signature('tor.role_moderator.tasks.verify_post_complete').delay \
+            .assert_called_once()
         # TODO: more to come when actual functionality is built-out
 
+        assert_only_tasks_called(
+            'tor.role_moderator.tasks.verify_post_complete',
+        )
         mock_reddit.comment.assert_any_call(self.comment.id)
 
     @patch('tor.role_moderator.tasks.signature', side_effect=signature)
@@ -241,7 +246,12 @@ class ProcessDoneCommentTest(unittest.TestCase):
                                         return_value=self.comment)
         process_comment(self.comment.id)
         # TODO: more to come when actual functionality is built-out
+        signature('tor.role_moderator.tasks.verify_post_complete').delay \
+            .assert_called_once()
 
+        assert_only_tasks_called(
+            'tor.role_moderator.tasks.verify_post_complete',
+        )
         mock_reddit.comment.assert_any_call(self.comment.id)
 
     @patch('tor.role_moderator.tasks.signature', side_effect=signature)
@@ -256,6 +266,9 @@ class ProcessDoneCommentTest(unittest.TestCase):
         process_comment(self.comment.id)
         # TODO: more to come when actual functionality is built-out
 
+        assert_only_tasks_called(
+            # TODO
+        )
         mock_reddit.comment.assert_any_call(self.comment.id)
 
     @patch('tor.role_moderator.tasks.signature', side_effect=signature)
@@ -269,6 +282,9 @@ class ProcessDoneCommentTest(unittest.TestCase):
         process_comment(self.comment.id)
         # TODO: more to come when actual functionality is built-out
 
+        assert_only_tasks_called(
+            # TODO
+        )
         mock_reddit.comment.assert_any_call(self.comment.id)
 
     @patch('tor.role_moderator.tasks.signature', side_effect=signature)

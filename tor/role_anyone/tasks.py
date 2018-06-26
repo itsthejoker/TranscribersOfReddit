@@ -1,5 +1,6 @@
 from tor_core import OUR_BOTS
 from tor_core.config import Config
+from tor_core.users import User
 from tor.task_base import Task
 
 from celery.utils.log import get_task_logger
@@ -138,6 +139,17 @@ def unhandled_comment(self, comment_id, body):
         f'{body}',
         '#general'
     )
+
+
+@app.task(bind=True, ignore_result=True, base=Task)
+def bump_user_transcriptions(self, username: str, by: int):
+    u = User(username, redis_conn=self.redis)
+    count = u.get('transcriptions')
+    count += by
+    u.set('transcriptions', count)
+    u.save()
+
+    # TODO: Call out to reddit to set the flair
 
 
 @app.task(bind=True, ignore_result=True, base=Task)

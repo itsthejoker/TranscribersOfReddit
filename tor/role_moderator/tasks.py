@@ -2,6 +2,7 @@ from tor_core import OUR_BOTS
 from tor_core.config import Config
 from tor.context import (
     InvalidState,
+    find_transcription_comment_id,
     is_claimable_post,
     is_claimed_post_response,
     is_code_of_conduct,
@@ -10,8 +11,8 @@ from tor.context import (
 from tor.user_interaction import (
     format_bot_response as _,
     message_link,
-    responses as bot_msg,
     post_comment,
+    responses as bot_msg,
 )
 from tor.task_base import Task, InvalidUser
 
@@ -251,8 +252,8 @@ def process_comment(self, comment_id):
                                        'accept_code_of_conduct')
     unhandled_comment = signature('tor.role_anyone.tasks.unhandled_comment')
     claim_post = signature('tor.role_moderator.tasks.claim_post')
-    # mark_post_complete = signature('tor.role_moderator.tasks.'
-    #                                'mark_task_complete')
+    verify_post_complete = signature('tor.role_moderator.tasks.'
+                                     'verify_post_complete')
 
     reply = self.reddit.comment(comment_id)
 
@@ -285,8 +286,7 @@ def process_comment(self, comment_id):
 
     elif is_claimed_post_response(reply.parent()):
         if re.search(r'\b(?:done|deno)\b', body):
-            # mark_post_complete.delay(comment_id=reply.id)
-            pass
+            verify_post_complete.delay(comment_id=reply.id)
         elif re.search(r'(?=<^|\W)!override\b', body):  # pragma: no coverage
             # TODO: Fill out override scenario and remove pragma directive
             pass
@@ -325,10 +325,15 @@ def claim_post(self, comment_id, verify=True, first_claim=False):
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
-def mark_task_complete(self, comment_id):
-    update_post_flair = signature('tor.role_moderator.tasks.update_post_flair')
+def verify_post_complete(self, comment_id):
+    mark_post_complete = signature('tor.role_moderator.tasks.'
+                                   'mark_post_complete')
 
     comment = self.reddit.comment(comment_id)
+
+    if not comment.submission.author.name == 'transcribersofreddit':
+        raise InvalidState(f'Unable to mark post as done if it\'s not a '
+                           f'transcribable post. https://redd.it/{comment.id}')
 
     if not self.redis.sismember('accepted_CoC', comment.author.name):
         raise InvalidState(f'Unable to complete post without first accepting '
@@ -338,10 +343,39 @@ def mark_task_complete(self, comment_id):
         raise InvalidState(f'Unable to claim a post that is not claimable. '
                            f'https://redd.it/{comment.id}')
 
-    # TODO: Check if transcription is actually completed by the user
-    # saying 'done'
+    other_post_id = comment.submission.id_from_url(comment.submission.url)
+    other_post = self.reddit.submission(other_post_id)
 
-    update_post_flair.delay(comment.submission.id, 'Completed!')
+    transcription_id = find_transcription_comment_id(
+        author=comment.author.name,
+        post=other_post,
+        http=self.http,
+        log=log,
+    )
+    if transcription_id:
+        mark_post_complete.delay(comment.submission.id,
+                                 'Completed!')
+    else:
+        # TODO: no transcription found. Comment to that effect
+        pass
+
+
+@app.task(bind=True, ignore_result=True, base=Task)
+def mark_post_complete(self, comment_id):
+    """
+    This task exists separately so we may manually mark a post as complete via
+    the `celery` command, or by `!override` comment
+    """
+
+    update_post_flair = signature('tor.role_moderator.tasks.update_post_flair')
+    bump_user_transcriptions = signature('tor.role_anyone.tasks.'
+                                         'bump_user_transcriptions')
+
+    comment = self.reddit.comment(comment_id)
+
+    bump_user_transcriptions.delay(username=comment.author.name, by=1)
+    update_post_flair.delay(comment.submission.id,
+                            'Completed!')
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
