@@ -89,6 +89,7 @@ def find_transcription_id_from_top_comments(
     return None
 
 
+# NOT YET TESTED
 def find_transcription_id_from_post_history(
     author: str, post_url: str, http: Session, log: Logger
 ) -> Optional[str]:
@@ -144,6 +145,7 @@ def is_claimable_post(comment: Comment, override=False) -> bool:
     return False
 
 
+# NOT YET TESTED
 def is_transcription(comment: Comment) -> bool:
     if is_transcription_body(comment.body):
         return True
@@ -151,6 +153,7 @@ def is_transcription(comment: Comment) -> bool:
     return False
 
 
+# NOT YET TESTED
 def is_transcription_body(text: str) -> bool:
     if "^^I'm&#32;a&#32;human&#32;volunteer&#32;" in text.lower():
         return True

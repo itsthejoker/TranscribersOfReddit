@@ -7,10 +7,13 @@ from tor.context import (
     is_claimed_post_response,
     is_claimable_post,
     has_youtube_captions,
+    find_transcription_comment_id,
+    find_transcription_id_from_top_comments,
 )
 
 import os
 import unittest
+from unittest.mock import patch, MagicMock
 
 
 class IsCodeOfConductTest(unittest.TestCase):
@@ -132,3 +135,90 @@ class IsYoutubeCaptionTest(unittest.TestCase):
     def test_non_video(self):
         link = "https://via.placeholder.com/1x1.png"
         assert not has_youtube_captions(link)
+
+
+class FindTranscriptionWrapperTest(unittest.TestCase):
+    def setUp(self):
+        self.submission = generate_submission()
+
+    @patch("tor.context.find_transcription_id_from_top_comments", return_value=None)
+    @patch("tor.context.find_transcription_id_from_post_history", return_value=None)
+    def test_end_to_end_routing(self, mock_history, mock_top_comments):
+        assert not find_transcription_comment_id(
+            author="abc", post=self.submission, http=None, log=None
+        )
+        mock_top_comments.assert_called_once()
+        mock_history.assert_called_once()
+
+    @patch("tor.context.find_transcription_id_from_top_comments", return_value=None)
+    @patch("tor.context.find_transcription_id_from_post_history", return_value="abc123")
+    def test_history_comment_found(self, mock_history, mock_top_comments):
+        assert find_transcription_comment_id(
+            author="abc", post=self.submission, http=None, log=None
+        )
+        mock_top_comments.assert_called_once()
+        mock_history.assert_called_once()
+
+    @patch("tor.context.find_transcription_id_from_top_comments", return_value="abc123")
+    @patch("tor.context.find_transcription_id_from_post_history", return_value=None)
+    def test_top_level_comment_found(self, mock_history, mock_top_comments):
+        assert find_transcription_comment_id(
+            author="abc", post=self.submission, http=None, log=None
+        )
+        mock_top_comments.assert_called_once()
+        mock_history.assert_not_called()
+
+
+@pytest.mark.skip(reason="Reddit is broken, this feature is broken")
+class FindTranscriptionInUserHistoryTest(unittest.TestCase):
+    def test_stuff(self):
+        pass
+
+
+class FindTranscriptionInTopCommentsTest(unittest.TestCase):
+    def setUp(self):
+        self.submission = generate_submission()
+        self.submission.comments.replace_more.side_effect = None
+        self.log = MagicMock(name="logger")
+
+        self.submission.reply("Decoy comment")
+        self.submission.reply("other comment")
+        self.submission.reply("more comments")
+
+    @patch("tor.context.is_transcription")
+    def test_comment_at_top_level(self, mock_tester):
+        target = self.submission.reply("This is a transcript")
+        mock_tester.side_effect = lambda cmnt: cmnt == target
+
+        found_id = find_transcription_id_from_top_comments(
+            author=target.author.name, post=self.submission, log=self.log
+        )
+
+        self.log.debug.assert_called_once()
+
+        assert found_id == target.id
+
+    @patch("tor.context.is_transcription")
+    def test_nested_comment(self, mock_tester):
+        target = self.submission.comments.list()[0].reply("This is a transcript")
+        mock_tester.side_effect = lambda cmnt: cmnt == target
+
+        found_id = find_transcription_id_from_top_comments(
+            author=target.author.name, post=self.submission, log=self.log
+        )
+
+        assert found_id is None
+        assert target.id is not None
+
+    @patch("tor.context.is_transcription")
+    def test_comment_on_other_submission(self, mock_tester):
+        other_submission = generate_submission()
+        target = other_submission.reply("This is a transcript")
+        mock_tester.side_effect = lambda cmnt: cmnt == target
+
+        found_id = find_transcription_id_from_top_comments(
+            author=target.author.name, post=self.submission, log=self.log
+        )
+
+        assert found_id is None
+        assert target.id is not None

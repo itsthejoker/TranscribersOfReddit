@@ -134,11 +134,20 @@ def generate_submission(
         random.choices(loremipsum.Generator().words, k=random.choice(range(1, 5)))
     )
 
+    sub._comments = list()
+
+    sub.comments = MagicMock(name="post comments")
+
+    def list_comments(*args, **kwargs):
+        return list(sub._comments)
+
     def make_comment(body):
         out = reply if reply else generate_comment(submission=sub)
         out.parent.return_value = sub
         out.submission = sub
         out.body = body
+
+        sub._comments.append(out)
 
         return out
 
@@ -156,6 +165,9 @@ def generate_submission(
             {**template, **{"flair_text": "Completed", "flair_template_id": "3"}},
             {**template, **{"flair_text": "Meta", "flair_template_id": "4"}},
         ]
+
+    sub.comments = MagicMock(name="submission comments")
+    sub.comments.list.side_effect = list_comments
 
     sub.reply.side_effect = make_comment
     sub.mark_read = MagicMock(side_effect=None)
