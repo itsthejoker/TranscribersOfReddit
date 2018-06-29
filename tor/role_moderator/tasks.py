@@ -278,6 +278,7 @@ def process_comment(self, comment_id):
             unhandled_comment.delay(comment_id=reply.id, body=reply.body)
 
 
+# TODO: Test support
 @app.task(bind=True, ignore_result=True, base=Task)
 def claim_post(self, comment_id, verify=True, first_claim=False):
     """
@@ -308,6 +309,7 @@ def claim_post(self, comment_id, verify=True, first_claim=False):
         post_comment(repliable=comment, body=bot_msg["claim_success"])
 
 
+# TODO: Test support
 @app.task(bind=True, ignore_result=True, base=Task)
 def verify_post_complete(self, comment_id):
     mark_post_complete = signature("tor.role_moderator.tasks.mark_post_complete")
@@ -343,6 +345,7 @@ def verify_post_complete(self, comment_id):
         post_comment(repliable=comment, body=bot_msg["no_transcript_found"])
 
 
+# TODO: Test support
 @app.task(bind=True, ignore_result=True, base=Task)
 def mark_post_complete(self, comment_id):
     """
@@ -361,6 +364,7 @@ def mark_post_complete(self, comment_id):
     update_post_flair.delay(comment.submission.id, "Completed!")
 
 
+# TODO: Test support
 @app.task(bind=True, ignore_result=True, base=Task)
 def post_to_tor(self, sub, title, link, domain, post_id, media_link=None):
     """

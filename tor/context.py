@@ -89,7 +89,7 @@ def find_transcription_id_from_top_comments(
     return None
 
 
-# NEEDS TEST SUPPORT
+# TODO: Test support
 def find_transcription_id_from_post_history(
     author: str, post_url: str, http: Session, log: Logger
 ) -> Optional[str]:  # pragma: no cover
