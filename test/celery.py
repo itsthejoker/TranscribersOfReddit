@@ -21,17 +21,16 @@ def reset_signatures():
 
 
 def assert_valid_import_path(pypath):
-    parts = pypath.split('.')
+    parts = pypath.split(".")
     task = parts.pop()
-    parent = '.'.join(parts)
+    parent = ".".join(parts)
 
     # @see https://stackoverflow.com/a/14050282
     spec = importlib.util.find_spec(parent)
-    assert spec is not None, \
-        f'Module {parent} does not resolve to a valid module'
+    assert spec is not None, f"Module {parent} does not resolve to a valid module"
 
     mod = importlib.import_module(parent)
-    assert hasattr(mod, task), f'Module {parent} does not have a {task} task'
+    assert hasattr(mod, task), f"Module {parent} does not have a {task} task"
 
 
 def signature(pypath, *args, **kwargs):
@@ -63,8 +62,11 @@ def assert_only_tasks_called(*signatures):
     called. This helps with mapping which task signatures upon which the tested
     task depends.
     """
-    if len(signatures) > 0 and not isinstance(signatures[0], str) and \
-            hasattr(signatures[0], '__iter__'):
+    if (
+        len(signatures) > 0
+        and not isinstance(signatures[0], str)
+        and hasattr(signatures[0], "__iter__")
+    ):
         # Incorrect usage. Correct a some tuple/list/dict/etc. from first arg as
         # all args instead.
         return assert_only_tasks_called(*signatures[0])

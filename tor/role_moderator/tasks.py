@@ -17,10 +17,7 @@ from tor.user_interaction import (
 from tor.task_base import Task, InvalidUser
 
 from celery.utils.log import get_task_logger
-from celery import (
-    current_app as app,
-    signature,
-)
+from celery import current_app as app, signature
 from praw.models import Comment
 
 import re
@@ -31,10 +28,10 @@ log = get_task_logger(__name__)
 
 
 MOD_SUPPORT_PHRASES = [
-    re.compile('fuck', re.IGNORECASE),
-    re.compile('unclaim', re.IGNORECASE),
-    re.compile('undo', re.IGNORECASE),
-    re.compile('(?:good|bad) bot', re.IGNORECASE),
+    re.compile("fuck", re.IGNORECASE),
+    re.compile("unclaim", re.IGNORECASE),
+    re.compile("undo", re.IGNORECASE),
+    re.compile("(?:good|bad) bot", re.IGNORECASE),
 ]
 
 
@@ -45,11 +42,10 @@ def check_inbox(self):
     queues. This effectively transfers tasks from Reddit's inbox to our internal
     task queuing system, reducing the required API calls.
     """
-    send_to_slack = signature('tor.role_anyone.tasks.send_to_slack')
-    send_bot_message = signature('tor.role_moderator.tasks.send_bot_message')
-    process_comment = signature('tor.role_moderator.tasks.process_comment')
-    process_admin_command = signature('tor.role_moderator.tasks.'
-                                      'process_admin_command')
+    send_to_slack = signature("tor.role_anyone.tasks.send_to_slack")
+    send_bot_message = signature("tor.role_moderator.tasks.send_bot_message")
+    process_comment = signature("tor.role_moderator.tasks.process_comment")
+    process_admin_command = signature("tor.role_moderator.tasks.process_admin_command")
 
     for item in reversed(list(self.reddit.inbox.unread(limit=None))):
 
@@ -57,46 +53,52 @@ def check_inbox(self):
         #   `isinstance()`. We can mock out the objects with MagicMock now and
         #   have fewer classes loaded in this context.
 
-        if item.kind == 't1':  # Comment
-            if 'username mention' in item.subject.lower():
-                log.info(f'Username mention by /u/{item.author.name}')
-                send_bot_message.delay(to=item.author.name,
-                                       subject='Username Call',
-                                       body=_(bot_msg['mention']))
+        if item.kind == "t1":  # Comment
+            if "username mention" in item.subject.lower():
+                log.info(f"Username mention by /u/{item.author.name}")
+                send_bot_message.delay(
+                    to=item.author.name,
+                    subject="Username Call",
+                    body=_(bot_msg["mention"]),
+                )
 
             else:
                 process_comment.delay(item.id)
 
-        elif item.kind == 't4':  # Message
+        elif item.kind == "t4":  # Message
             # Very rarely we may actually get a message from Reddit admins, in
             # which case there will be no author attribute
             if item.author is None:
-                log.info(f'Received message from the admins: {item.subject}')
+                log.info(f"Received message from the admins: {item.subject}")
                 send_to_slack.delay(
-                    f'*Incoming message without an author*\n\n'
-                    f'*Subject:* {item.subject}\n'
-                    f'*Body:*\n\n'
-                    f'{item.body}',
-                    '#general'
+                    f"*Incoming message without an author*\n\n"
+                    f"*Subject:* {item.subject}\n"
+                    f"*Body:*\n\n"
+                    f"{item.body}",
+                    "#general",
                 )
 
-            elif item.subject and item.subject[0] == '!':
-                process_admin_command.delay(author=item.author.name,
-                                            subject=item.subject,
-                                            body=item.body,
-                                            message_id=item.id)
+            elif item.subject and item.subject[0] == "!":
+                process_admin_command.delay(
+                    author=item.author.name,
+                    subject=item.subject,
+                    body=item.body,
+                    message_id=item.id,
+                )
             else:
-                log.info(f'Received unhandled message from '
-                         f'/u/{item.author.name}. Subject: '
-                         f'{repr(item.subject)}')
+                log.info(
+                    f"Received unhandled message from "
+                    f"/u/{item.author.name}. Subject: "
+                    f"{repr(item.subject)}"
+                )
                 send_to_slack.delay(
-                    f'Unhandled message by [/u/{item.author.name}]'
-                    f'(https://reddit.com/user/{item.author.name})'
-                    f'\n\n'
-                    f'*Subject:* {item.subject}'
-                    f'\n\n'
-                    f'{item.body}'
-                    '#general'
+                    f"Unhandled message by [/u/{item.author.name}]"
+                    f"(https://reddit.com/user/{item.author.name})"
+                    f"\n\n"
+                    f"*Subject:* {item.subject}"
+                    f"\n\n"
+                    f"{item.body}"
+                    "#general"
                 )
 
         else:  # pragma: no cover
@@ -104,10 +106,9 @@ def check_inbox(self):
             # There shouldn't be any other types than Message and Comment,
             # but on the off-chance there is, we'll log what it is here.
             send_to_slack.delay(
-                f'Unhandled, unknown inbox item: {type(item).__name__}',
-                '#botstuffs'
+                f"Unhandled, unknown inbox item: {type(item).__name__}", "#botstuffs"
             )
-            log.warning(f'Unhandled, unknown inbox item: {type(item).__name__}')
+            log.warning(f"Unhandled, unknown inbox item: {type(item).__name__}")
 
         item.mark_read()
 
@@ -125,30 +126,31 @@ def process_admin_command(self, author, subject, body, message_id):
     - Send the response from the function as a reply back to the invoking
       message.
     """
-    send_bot_message = signature('tor.role_moderator.tasks.send_bot_message')
-    send_to_slack = signature('tor.role_anyone.tasks.send_to_slack')
+    send_bot_message = signature("tor.role_moderator.tasks.send_bot_message")
+    send_to_slack = signature("tor.role_anyone.tasks.send_to_slack")
 
     # It only makes sense to have this be scoped to /r/ToR
-    config = Config.subreddit('TranscribersOfReddit')
+    config = Config.subreddit("TranscribersOfReddit")
     command_name = subject.lower()[1:]  # Lowercase and remove the initial '!'
 
     if not config.commands.allows(command_name).by_user(author):
-        log.warning(f'DENIED: {author} is not allowed to call {command_name}')
+        log.warning(f"DENIED: {author} is not allowed to call {command_name}")
         send_to_slack.delay(
-            f':rotating_light::rotating_light: DENIED! '
-            f':rotating_light::rotating_light:\n\n{author} '
-            f'tried to `{command_name}` but was not permitted to do so',
-            '#general',
+            f":rotating_light::rotating_light: DENIED! "
+            f":rotating_light::rotating_light:\n\n{author} "
+            f"tried to `{command_name}` but was not permitted to do so",
+            "#general",
         )
         return
 
-    log.info(f'{author} called {command_name} with args {repr(body)}')
+    log.info(f"{author} called {command_name} with args {repr(body)}")
 
     func = config.commands.func(command_name)
     response = func(author=author, body=body, svc=self)
 
-    log.debug(f'Responding to {command_name} with {repr(body)} -> '
-              f'{repr(response)}.')
+    log.debug(
+        f"Responding to {command_name} with {repr(body)} -> " f"{repr(response)}."
+    )
 
     send_bot_message.delay(body=_(response), message_id=message_id)
 
@@ -167,21 +169,20 @@ def update_post_flair(self, submission_id, flair):
     post = self.reddit.submission(submission_id)
 
     for choice in post.flair.choices():
-        if choice['flair_text'].lower() == flair.lower():
+        if choice["flair_text"].lower() == flair.lower():
             # NOTE: This is hacky if we have multiple styles for the same flair.
             #   That said, we shouldn't rely on visual style if we're being
             #   truly accessible...
-            post.flair.select(
-                flair_template_id=choice['flair_template_id']
-            )
+            post.flair.select(flair_template_id=choice["flair_template_id"])
             return
 
     raise NotImplementedError(f"Unknown flair, {repr(flair)}, for post")
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
-def send_bot_message(self, body, message_id=None, to=None,
-                     subject='Just bot things...'):
+def send_bot_message(
+    self, body, message_id=None, to=None, subject="Just bot things..."
+):
     """
     Sends a message as /u/TranscribersOfReddit
 
@@ -195,9 +196,10 @@ def send_bot_message(self, body, message_id=None, to=None,
     One of these _must_ be done.
     """
     sender = self.reddit.user.me().name
-    if sender != 'transcribersofreddit':
-        raise InvalidUser(f'Attempting to send message as {sender}'
-                          f'instead of the official ToR bot')
+    if sender != "transcribersofreddit":
+        raise InvalidUser(
+            f"Attempting to send message as {sender} instead of the official ToR bot"
+        )
 
     if message_id:
         self.reddit.message(message_id).reply(body)
@@ -214,7 +216,7 @@ def process_mod_intervention(comment: Comment):
     Triggers an alert in Slack with a link to the comment if there is something
     offensive or in need of moderator intervention
     """
-    send_to_slack = signature('tor.role_anyone.tasks.send_to_slack')
+    send_to_slack = signature("tor.role_anyone.tasks.send_to_slack")
 
     phrases = []
     for regex in MOD_SUPPORT_PHRASES:
@@ -231,14 +233,12 @@ def process_mod_intervention(comment: Comment):
     # Wrap each phrase in double-quotes (") and commas in between
     phrase = '"' + '", "'.join(phrases) + '"'
 
-    title = 'Mod Intervention Needed'
-    message = f'Detected use of {phrase} <{comment.submission.shortlink}>'
+    title = "Mod Intervention Needed"
+    message = f"Detected use of {phrase} <{comment.submission.shortlink}>"
 
     send_to_slack.delay(
-        f':rotating_light::rotating_light: {title} '
-        f':rotating_light::rotating_light:\n\n'
-        f'{message}',
-        '#general',
+        f":rotating_light::rotating_light: {title} :rotating_light::rotating_light:\n\n{message}",
+        "#general",
     )
 
 
@@ -248,12 +248,10 @@ def process_comment(self, comment_id):
     Processes a notification of comment being made, routing to other tasks as
     is deemed necessary
     """
-    accept_code_of_conduct = signature('tor.role_anyone.tasks.'
-                                       'accept_code_of_conduct')
-    unhandled_comment = signature('tor.role_anyone.tasks.unhandled_comment')
-    claim_post = signature('tor.role_moderator.tasks.claim_post')
-    verify_post_complete = signature('tor.role_moderator.tasks.'
-                                     'verify_post_complete')
+    accept_code_of_conduct = signature("tor.role_anyone.tasks.accept_code_of_conduct")
+    unhandled_comment = signature("tor.role_anyone.tasks.unhandled_comment")
+    claim_post = signature("tor.role_moderator.tasks.claim_post")
+    verify_post_complete = signature("tor.role_moderator.tasks.verify_post_complete")
 
     reply = self.reddit.comment(comment_id)
 
@@ -266,35 +264,26 @@ def process_comment(self, comment_id):
     process_mod_intervention(reply)
 
     if is_code_of_conduct(reply.parent()):
-        if re.search(r'\bi accept\b', body):
+        if re.search(r"\bi accept\b", body):
             accept_code_of_conduct.delay(reply.author.name)
             claim_post.delay(reply.id, verify=False, first_claim=True)
         else:
-            unhandled_comment.delay(
-                comment_id=reply.id,
-                body=reply.body
-            )
+            unhandled_comment.delay(comment_id=reply.id, body=reply.body)
 
     elif is_claimable_post(reply.parent()):
-        if re.search(r'\bclaim\b', body):
+        if re.search(r"\bclaim\b", body):
             claim_post.delay(reply.id)
         else:
-            unhandled_comment.delay(
-                comment_id=reply.id,
-                body=reply.body
-            )
+            unhandled_comment.delay(comment_id=reply.id, body=reply.body)
 
     elif is_claimed_post_response(reply.parent()):
-        if re.search(r'\b(?:done|deno)\b', body):
+        if re.search(r"\b(?:done|deno)\b", body):
             verify_post_complete.delay(comment_id=reply.id)
-        elif re.search(r'(?=<^|\W)!override\b', body):  # pragma: no coverage
+        elif re.search(r"(?=<^|\W)!override\b", body):  # pragma: no coverage
             # TODO: Fill out override scenario and remove pragma directive
             pass
         else:
-            unhandled_comment.delay(
-                comment_id=reply.id,
-                body=reply.body
-            )
+            unhandled_comment.delay(comment_id=reply.id, body=reply.body)
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
@@ -304,57 +293,60 @@ def claim_post(self, comment_id, verify=True, first_claim=False):
       - Update flair: ``Unclaimed`` -> ``In Progress``
       - Post response: ``Hey, you have the post!``
     """
-    update_post_flair = signature('tor.role_moderator.tasks.update_post_flair')
+    update_post_flair = signature("tor.role_moderator.tasks.update_post_flair")
 
     comment = self.reddit.comment(comment_id)
 
-    if verify and not self.redis.sismember('accepted_CoC', comment.author.name):
-        raise InvalidState(f'Unable to claim a post without first accepting '
-                           f'the code of conduct')
+    if verify and not self.redis.sismember("accepted_CoC", comment.author.name):
+        raise InvalidState(
+            f"Unable to claim a post without first accepting " f"the code of conduct"
+        )
 
     if not is_claimable_post(comment.parent(), override=True):
-        raise InvalidState(f'Unable to claim a post that is not claimable. '
-                           f'https://redd.it/{comment.id}')
+        raise InvalidState(
+            f"Unable to claim a post that is not claimable. "
+            f"https://redd.it/{comment.id}"
+        )
 
-    update_post_flair.delay(comment.submission.id, 'In Progress')
+    update_post_flair.delay(comment.submission.id, "In Progress")
     if first_claim:
         # TODO: replace with more first-time friendly of a response
-        post_comment(repliable=comment, body=bot_msg['claim_success'])
+        post_comment(repliable=comment, body=bot_msg["claim_success"])
     else:
-        post_comment(repliable=comment, body=bot_msg['claim_success'])
+        post_comment(repliable=comment, body=bot_msg["claim_success"])
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
 def verify_post_complete(self, comment_id):
-    mark_post_complete = signature('tor.role_moderator.tasks.'
-                                   'mark_post_complete')
+    mark_post_complete = signature("tor.role_moderator.tasks.mark_post_complete")
 
     comment = self.reddit.comment(comment_id)
 
-    if not comment.submission.author.name == 'transcribersofreddit':
-        raise InvalidState(f'Unable to mark post as done if it\'s not a '
-                           f'transcribable post. https://redd.it/{comment.id}')
+    if not comment.submission.author.name == "transcribersofreddit":
+        raise InvalidState(
+            f"Unable to mark post as done if it's not a "
+            f"transcribable post. https://redd.it/{comment.id}"
+        )
 
-    if not self.redis.sismember('accepted_CoC', comment.author.name):
-        raise InvalidState(f'Unable to complete post without first accepting '
-                           f'the code of conduct')
+    if not self.redis.sismember("accepted_CoC", comment.author.name):
+        raise InvalidState(
+            f"Unable to complete post without first accepting " f"the code of conduct"
+        )
 
     if not is_claimed_post_response(comment.parent(), override=True):
-        raise InvalidState(f'Unable to claim a post that is not claimable. '
-                           f'https://redd.it/{comment.id}')
+        raise InvalidState(
+            f"Unable to claim a post that is not claimable. "
+            f"https://redd.it/{comment.id}"
+        )
 
     other_post_id = comment.submission.id_from_url(comment.submission.url)
     other_post = self.reddit.submission(other_post_id)
 
     transcription_id = find_transcription_comment_id(
-        author=comment.author.name,
-        post=other_post,
-        http=self.http,
-        log=log,
+        author=comment.author.name, post=other_post, http=self.http, log=log
     )
     if transcription_id:
-        mark_post_complete.delay(comment.submission.id,
-                                 'Completed!')
+        mark_post_complete.delay(comment.submission.id, "Completed!")
     else:
         # TODO: no transcription found. Comment to that effect
         pass
@@ -367,15 +359,15 @@ def mark_post_complete(self, comment_id):
     the `celery` command, or by `!override` comment
     """
 
-    update_post_flair = signature('tor.role_moderator.tasks.update_post_flair')
-    bump_user_transcriptions = signature('tor.role_anyone.tasks.'
-                                         'bump_user_transcriptions')
+    update_post_flair = signature("tor.role_moderator.tasks.update_post_flair")
+    bump_user_transcriptions = signature(
+        "tor.role_anyone.tasks.bump_user_transcriptions"
+    )
 
     comment = self.reddit.comment(comment_id)
 
     bump_user_transcriptions.delay(username=comment.author.name, by=1)
-    update_post_flair.delay(comment.submission.id,
-                            'Completed!')
+    update_post_flair.delay(comment.submission.id, "Completed!")
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
@@ -391,45 +383,46 @@ def post_to_tor(self, sub, title, link, domain, post_id, media_link=None):
         media_link - The link to the media in need of transcription
     """
     if not media_link:
-        log.warn(f'Attempting to post content with no media link. '
-                 f'({sub}: [{domain}] {repr(title)})')
+        log.warn(
+            f"Attempting to post content with no media link. "
+            f"({sub}: [{domain}] {repr(title)})"
+        )
         return
 
     # If youtube transcript is found, skip posting it to /r/ToR
     if has_youtube_captions(media_link):
-        log.info(f'Found youtube captions for {media_link}... skipped.')
-        self.redis.sadd('complete_post_ids', post_id)
-        self.redis.incr('total_posted', amount=1)
-        self.redis.incr('total_new', amount=1)
+        log.info(f"Found youtube captions for {media_link}... skipped.")
+        self.redis.sadd("complete_post_ids", post_id)
+        self.redis.incr("total_posted", amount=1)
+        self.redis.incr("total_new", amount=1)
 
         return
 
-    update_post_flair = signature('tor.role_moderator.tasks.update_post_flair')
+    update_post_flair = signature("tor.role_moderator.tasks.update_post_flair")
 
     config = Config.subreddit(sub)
-    title = textwrap.shorten(title, width=250, placeholder='...')
+    title = textwrap.shorten(title, width=250, placeholder="...")
 
     post_type = config.templates.url_type(domain)
     post_template = config.templates.content(domain)
     footer = config.templates.footer
 
-    submission = self.reddit.subreddit('TranscribersOfReddit').submit(
-        title=f'{sub} | {post_type.title()} | "{title}"',
-        url=link,
+    submission = self.reddit.subreddit("TranscribersOfReddit").submit(
+        title=f'{sub} | {post_type.title()} | "{title}"', url=link
     )
 
-    update_post_flair.delay(submission.id, 'Unclaimed')
+    update_post_flair.delay(submission.id, "Unclaimed")
 
     # Add completed post to tracker
-    self.redis.sadd('complete_post_ids', post_id)
-    self.redis.incr('total_posted', amount=1)
-    self.redis.incr('total_new', amount=1)
+    self.redis.sadd("complete_post_ids", post_id)
+    self.redis.incr("total_posted", amount=1)
+    self.redis.incr("total_new", amount=1)
 
     # TODO: OCR job for this comment
-    reply = bot_msg['intro_comment'].format(
+    reply = bot_msg["intro_comment"].format(
         post_type=post_type,
         formatting=post_template,
         footer=footer,
-        message_url=message_link(subject='General Questions'),
+        message_url=message_link(subject="General Questions"),
     )
     post_comment(repliable=submission, body=reply)

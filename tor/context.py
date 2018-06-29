@@ -27,7 +27,7 @@ def is_code_of_conduct(comment: Comment) -> bool:
 
 
 def is_code_of_conduct_body(text: str) -> bool:
-    if 'code of conduct' in text.lower():
+    if "code of conduct" in text.lower():
         return True
 
     return False
@@ -41,14 +41,15 @@ def is_claimed_post_response(comment: Comment) -> bool:
 
 
 def is_claimed_post_flair(flair: str) -> bool:
-    if 'in progress' in flair.lower():
+    if "in progress" in flair.lower():
         return True
 
     return False
 
 
-def find_transcription_comment_id(author: str, post: Submission,
-                                  http: Session, log: Logger) -> Optional[str]:
+def find_transcription_comment_id(
+    author: str, post: Submission, http: Session, log: Logger
+) -> Optional[str]:
     """
     Search through the top-level comments for a submission for a comment by the
     user, then check if the comment has "the footer". Continue searching until
@@ -68,15 +69,13 @@ def find_transcription_comment_id(author: str, post: Submission,
 
     # Search through user's post history to find transcription comment
     return find_transcription_id_from_post_history(
-        author=author,
-        post_url=post.shortlink,
-        http=http,
-        log=log,
+        author=author, post_url=post.shortlink, http=http, log=log
     )
 
 
-def find_transcription_id_from_top_comments(author: str, post: Submission,
-                                            log: Logger) -> Optional[str]:
+def find_transcription_id_from_top_comments(
+    author: str, post: Submission, log: Logger
+) -> Optional[str]:
     post.comments.replace_more(limit=0)
     for comment in post.comments.list():
         if not comment.author.name == author:
@@ -84,16 +83,15 @@ def find_transcription_id_from_top_comments(author: str, post: Submission,
         if not is_transcription(comment):
             continue
 
-        log.debug(f'Found proof of u/{author}\'s transcription for '
-                  f'{post.shortlink}')
+        log.debug(f"Found proof of u/{author}'s transcription for " f"{post.shortlink}")
         return comment.id
 
     return None
 
 
-def find_transcription_id_from_post_history(author: str, post_url: str,
-                                            http: Session, log: Logger) -> \
-        Optional[str]:
+def find_transcription_id_from_post_history(
+    author: str, post_url: str, http: Session, log: Logger
+) -> Optional[str]:
     """
     Look through the user's recent post history for some comment on the
     submission's thread, seeing if any of _those_ have "the footer". Continue
@@ -104,30 +102,32 @@ def find_transcription_id_from_post_history(author: str, post_url: str,
     """
     last_id = None
     for page in range(0, 3):  # go back 4 pages of user history
-        log.debug(f'Checking page {page+1} of u/{author}\'s post history for '
-                  f'proof of transcription for {post_url}')
+        log.debug(
+            f"Checking page {page+1} of u/{author}'s post history for "
+            f"proof of transcription for {post_url}"
+        )
 
         if last_id:
-            response = http.get(f'https://reddit.com/user/{author}.json',
-                                params={'before': last_id})
+            response = http.get(
+                f"https://reddit.com/user/{author}.json", params={"before": last_id}
+            )
         else:
-            response = http.get(f'https://reddit.com/user/{author}.json')
+            response = http.get(f"https://reddit.com/user/{author}.json")
         response.raise_for_status()
         posts = response.json()
 
-        for comment in posts['data']['children']:
-            last_id = comment['data']['id']
-            if not is_transcription_body(comment['data']['body']):
+        for comment in posts["data"]["children"]:
+            last_id = comment["data"]["id"]
+            if not is_transcription_body(comment["data"]["body"]):
                 continue
-            if comment['data']['link_id'][3:] not in post_url:
+            if comment["data"]["link_id"][3:] not in post_url:
                 # Skip if not the transcription we're evaluating right now
                 continue
 
-            log.debug(f'Found proof of u/{author}\'s transcription for '
-                      f'{post_url}')
-            return comment['data']['id']
+            log.debug(f"Found proof of u/{author}'s transcription for " f"{post_url}")
+            return comment["data"]["id"]
 
-        log.debug(f'No proof found on page {page+1} for u/{author}')
+        log.debug(f"No proof found on page {page+1} for u/{author}")
         time.sleep(3)
 
     return None
@@ -138,7 +138,7 @@ def is_claimable_post(comment: Comment, override=False) -> bool:
     if not override and is_code_of_conduct(comment):
         return False
 
-    if 'unclaimed' in comment.submission.link_flair_text.lower():
+    if "unclaimed" in comment.submission.link_flair_text.lower():
         return True
 
     return False
@@ -161,7 +161,7 @@ def is_transcription_body(text: str) -> bool:
 def has_youtube_captions(link: str) -> bool:
     if not link:
         return False
-    if 'youtu' not in link:
+    if "youtu" not in link:
         return False
 
     video = youtube.Video(link)

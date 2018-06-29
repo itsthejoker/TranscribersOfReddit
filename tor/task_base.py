@@ -19,12 +19,13 @@ class Task(celery.Task):
     """
     Base class with lazy-loaded clients for external resources
     """
+
     @cached_property
     def reddit(self):  # pragma: no cover
         return praw.Reddit(
             check_for_updates=False,
-            user_agent=f'praw:org.grafeas.tor:v{__version__} '
-            '(by the mods of /r/TranscribersOfReddit)',
+            user_agent=f"praw:org.grafeas.tor:v{__version__} "
+            "(by the mods of /r/TranscribersOfReddit)",
         )
 
     @cached_property
@@ -37,7 +38,7 @@ class Task(celery.Task):
 
     @cached_property
     def slack(self):  # pragma: no cover
-        return SlackClient(os.environ['SLACK_API_KEY'])
+        return SlackClient(os.environ["SLACK_API_KEY"])
 
     autoretry_for = ()
     retry_backoff = True

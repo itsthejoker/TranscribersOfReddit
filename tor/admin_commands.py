@@ -24,7 +24,7 @@ def undefined_operation(author: str, arg: str, svc: Any) -> str:
     svc     -> (ignored)
     """
     # Should we instead send a response back to the user with this info?
-    raise NotImplementedError('Undefined operation')
+    raise NotImplementedError("Undefined operation")
 
 
 def noop(author: str, arg: str, svc: Any) -> str:
@@ -35,7 +35,7 @@ def noop(author: str, arg: str, svc: Any) -> str:
     arg     -> (ignored)
     svc     -> (ignored)
     """
-    return 'Nothing to be done.'
+    return "Nothing to be done."
 
 
 def ping(author: str, arg: str, svc: Any) -> str:
@@ -48,7 +48,7 @@ def ping(author: str, arg: str, svc: Any) -> str:
     """
     # TODO: Fill this out to have every worker check-in, then reply with the
     # aggregate responses of everyone.
-    return 'Pong!'
+    return "Pong!"
 
 
 def process_blacklist(author: str, arg: str, svc: Any) -> str:
@@ -62,7 +62,7 @@ def process_blacklist(author: str, arg: str, svc: Any) -> str:
                  - a requests object at `self.http`
     """
     users = arg.splitlines()
-    config = Config.subreddit('TranscribersOfReddit')
+    config = Config.subreddit("TranscribersOfReddit")
     failed = {
         # "username": "reason"
     }
@@ -70,24 +70,21 @@ def process_blacklist(author: str, arg: str, svc: Any) -> str:
 
     for user in users:
         if config.globals.is_moderator(user):
-            failed[user] = 'is a moderator'
+            failed[user] = "is a moderator"
 
-        elif svc.http.get(f'https://reddit.com/u/{user}.json')\
-                .status_code == 404:
-            failed[user] = 'is not a valid username on Reddit'
+        elif svc.http.get(f"https://reddit.com/u/{user}.json").status_code == 404:
+            failed[user] = "is not a valid username on Reddit"
 
-        elif svc.redis.sadd('blacklist', user):
+        elif svc.redis.sadd("blacklist", user):
             succeeded.append(user)
 
         else:
-            failed[user] = 'is already blacklisted'
+            failed[user] = "is already blacklisted"
 
-    out = f'Blacklist: ' \
-        f'{len(failed.keys())} failed, ' \
-        f'{len(succeeded)} succeeded\n'
+    out = f"Blacklist: " f"{len(failed.keys())} failed, " f"{len(succeeded)} succeeded\n"
 
     for user, reason in failed.items():
-        out += f'\n- **{user}** {reason}'
+        out += f"\n- **{user}** {reason}"
 
     return out
 
