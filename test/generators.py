@@ -204,14 +204,19 @@ def generate_comment(
     comment.parent = MagicMock(return_value=parent)
 
     def make_comment(cmnt_body):
-        out = reply if reply else generate_comment(name="reply", submission=submission)
+        if reply:
+            out = reply
+        else:
+            out = generate_comment(name="reply", parent=comment, submission=submission)
         out.body = cmnt_body
-        out.parent.return_value = comment
         return out
 
     comment.reply = MagicMock(side_effect=make_comment)
 
     comment.mark_as_read = MagicMock(side_effect=None, return_value=None)
+
+    if parent == submission:
+        parent._comments.append(comment)
 
     return comment
 

@@ -3,9 +3,10 @@ import pytest
 from .generators import generate_comment, generate_submission
 
 from tor.context import (
-    is_code_of_conduct,
     is_claimed_post_response,
     is_claimable_post,
+    is_code_of_conduct,
+    is_transcription,
     has_youtube_captions,
     find_transcription_comment_id,
     find_transcription_id_from_top_comments,
@@ -13,6 +14,8 @@ from tor.context import (
 
 import os
 import unittest
+import loremipsum
+import random
 from unittest.mock import patch, MagicMock
 
 
@@ -76,6 +79,27 @@ class IsUnclaimedTest(unittest.TestCase):
         self.comment.submission = generate_submission(flair="Unclaimed")
         self.comment.body = "Hi there! Please read and accept our Code of Conduct so that we can get you started with transcribing. Please read the Code of Conduct below, then respond to this comment with `I accept`.\n\nAfter you respond, I'll process your claim as normal.\n\n---\n\n"
         assert not is_claimable_post(self.comment)
+
+
+class IsTranscriptionTest(unittest.TestCase):
+    def setUp(self):
+        base_message = " ".join(
+            random.choices(loremipsum.Generator().words, k=random.choice(range(12, 30)))
+        )
+        self.random_message = base_message
+        self.good_message = (
+            f"{base_message}\n\n---\n\n^^I'm&#32;a&#32;human&#32;volunteer&#32;"
+        )
+
+    def test_good_comment(self):
+        comment = generate_comment(author="me", body=self.good_message)
+
+        assert is_transcription(comment)
+
+    def test_random_comment(self):
+        comment = generate_comment(author="me", body=self.random_message)
+
+        assert not is_transcription(comment)
 
 
 class IsClaimedTest(unittest.TestCase):
@@ -182,8 +206,12 @@ class FindTranscriptionInTopCommentsTest(unittest.TestCase):
         self.log = MagicMock(name="logger")
 
         self.submission.reply("Decoy comment")
-        self.submission.reply("other comment")
-        self.submission.reply("more comments")
+        generate_comment(
+            submission=self.submission, body="Other decoy comment", author="some_dude"
+        )
+        generate_comment(
+            submission=self.submission, body="More comments", author="random_person"
+        )
 
     @patch("tor.context.is_transcription")
     def test_comment_at_top_level(self, mock_tester):

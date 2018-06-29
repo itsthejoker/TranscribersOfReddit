@@ -89,10 +89,10 @@ def find_transcription_id_from_top_comments(
     return None
 
 
-# NOT YET TESTED
+# NEEDS TEST SUPPORT
 def find_transcription_id_from_post_history(
     author: str, post_url: str, http: Session, log: Logger
-) -> Optional[str]:
+) -> Optional[str]:  # pragma: no cover
     """
     Look through the user's recent post history for some comment on the
     submission's thread, seeing if any of _those_ have "the footer". Continue
@@ -145,17 +145,17 @@ def is_claimable_post(comment: Comment, override=False) -> bool:
     return False
 
 
-# NOT YET TESTED
 def is_transcription(comment: Comment) -> bool:
     if is_transcription_body(comment.body):
         return True
 
+    # Any ways we want to validate?
+
     return False
 
 
-# NOT YET TESTED
 def is_transcription_body(text: str) -> bool:
-    if "^^I'm&#32;a&#32;human&#32;volunteer&#32;" in text.lower():
+    if "^^I'm&#32;a&#32;human&#32;volunteer&#32;".lower() in text.lower():
         return True
 
     return False
