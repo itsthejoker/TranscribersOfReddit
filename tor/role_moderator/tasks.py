@@ -38,9 +38,9 @@ MOD_SUPPORT_PHRASES = [
 @app.task(bind=True, ignore_result=True, base=Task)
 def check_inbox(self):
     """
-    Checks all unread messages in the inbox, routing the responses to other
-    queues. This effectively transfers tasks from Reddit's inbox to our internal
-    task queuing system, reducing the required API calls.
+    Checks all unread messages in the inbox, routing the responses to other queues. This
+    effectively transfers tasks from Reddit's inbox to our internal task queuing system,
+    reducing the required API calls.
     """
     send_to_slack = signature("tor.role_anyone.tasks.send_to_slack")
     send_bot_message = signature("tor.role_moderator.tasks.send_bot_message")
@@ -72,8 +72,7 @@ def check_inbox(self):
                 log.info(f"Received message from the admins: {item.subject}")
                 send_to_slack.delay(
                     f"*Incoming message without an author*\n\n"
-                    f"*Subject:* {item.subject}\n"
-                    f"*Body:*\n\n"
+                    f"**Subject:** {item.subject}\n\n"
                     f"{item.body}",
                     "#general",
                 )
@@ -87,16 +86,11 @@ def check_inbox(self):
                 )
             else:
                 log.info(
-                    f"Received unhandled message from "
-                    f"/u/{item.author.name}. Subject: "
-                    f"{repr(item.subject)}"
+                    f"Received unhandled message from /u/{item.author.name}. Subject: {repr(item.subject)}"
                 )
                 send_to_slack.delay(
-                    f"Unhandled message by [/u/{item.author.name}]"
-                    f"(https://reddit.com/user/{item.author.name})"
-                    f"\n\n"
-                    f"*Subject:* {item.subject}"
-                    f"\n\n"
+                    f"Unhandled message by [/u/{item.author.name}](https://reddit.com/user/{item.author.name})\n\n"
+                    f"**Subject:** {item.subject}\n\n"
                     f"{item.body}"
                     "#general"
                 )
@@ -116,15 +110,14 @@ def check_inbox(self):
 @app.task(bind=True, ignore_result=True, base=Task)
 def process_admin_command(self, author, subject, body, message_id):
     """
-    This task is the basis for all other admin commands. It does not farm it out
-    to another task per command, rather it runs it in the existing task.
+    This task is the basis for all other admin commands. It does not farm it out to
+    another task per command, rather it runs it in the existing task.
 
     Steps:
     - Check for permissions
     - Retrieve associated function as a callable
     - Call said function with the commands (author, body, svc)
-    - Send the response from the function as a reply back to the invoking
-      message.
+    - Send the response from the function as a reply back to the invoking message.
     """
     send_bot_message = signature("tor.role_moderator.tasks.send_bot_message")
     send_to_slack = signature("tor.role_anyone.tasks.send_to_slack")
@@ -136,9 +129,8 @@ def process_admin_command(self, author, subject, body, message_id):
     if not config.commands.allows(command_name).by_user(author):
         log.warning(f"DENIED: {author} is not allowed to call {command_name}")
         send_to_slack.delay(
-            f":rotating_light::rotating_light: DENIED! "
-            f":rotating_light::rotating_light:\n\n{author} "
-            f"tried to `{command_name}` but was not permitted to do so",
+            f":rotating_light::rotating_light: DENIED! :rotating_light::rotating_light:\n\n"
+            f"{author} tried to `{command_name}` but was not permitted to do so",
             "#general",
         )
         return
@@ -384,8 +376,7 @@ def post_to_tor(self, sub, title, link, domain, post_id, media_link=None):
     """
     if not media_link:
         log.warn(
-            f"Attempting to post content with no media link. "
-            f"({sub}: [{domain}] {repr(title)})"
+            f"Attempting to post content with no media link. ({sub}: [{domain}] {repr(title)})"
         )
         return
 
