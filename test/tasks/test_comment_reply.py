@@ -223,12 +223,11 @@ class ProcessDoneCommentTest(unittest.TestCase):
 
         self.comment.body = "!override"
         self.comment.author = generate_redditor(username="tor_mod5")
-        # TODO: Test exception being thrown because unprivileged user???
         process_comment(self.comment.id)
-        # TODO: more to come when actual functionality is built-out
+        # TODO: Assert !override task is called
 
         assert_only_tasks_called(
-            # TODO
+            # TODO: Assert only the !override task is called
         )
         mock_reddit.comment.assert_any_call(self.comment.id)
 
@@ -242,9 +241,10 @@ class ProcessDoneCommentTest(unittest.TestCase):
         process_comment(self.comment.id)
         # TODO: more to come when actual functionality is built-out
 
-        assert_only_tasks_called(
-            # TODO
-        )
+        assert_no_tasks_called()
+        # assert_only_tasks_called(
+        #     # TODO
+        # )
         mock_reddit.comment.assert_any_call(self.comment.id)
 
     @patch("tor.role_moderator.tasks.signature", side_effect=signature)
@@ -254,7 +254,6 @@ class ProcessDoneCommentTest(unittest.TestCase):
 
         self.comment.body = "adsflkj232oiqqw123lk1209uasd;"
         process_comment(self.comment.id)
-        # TODO: more to come when actual functionality is built-out
 
         signature("tor.role_anyone.tasks.unhandled_comment").delay.assert_called_once()
 
