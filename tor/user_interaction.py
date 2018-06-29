@@ -9,46 +9,10 @@ faq_link = "https://www.reddit.com/r/TranscribersOfReddit/wiki/index"
 source_link = "https://github.com/GrafeasGroup/tor_worker"
 
 responses = {
-    "mention": (
-        "Hi there! Thanks for pinging me!\n\n"
-        "Due to some changes with how Reddit and individual subreddits handle "
-        "bots, I can't be summoned directly to your comment anymore. If "
-        "there's something that you would like assistance with, please post "
-        "a link in /r/DescriptionPlease, and one of our lovely volunteers will "
-        "be along shortly.\n\nThanks for using our services! We hope we can "
-        "make your day a little bit better :)\n\nCheers,\n\n"
-        "The Mods of /r/TranscribersOfReddit"
-    ),
-    "intro_comment": (
-        "If you would like to claim this post, please respond to this comment "
-        "with the word `claiming` or `claim` in your response. I will "
-        "automatically update the flair so that only one person is worker on a "
-        "post at any given time."
-        "\n\n"
-        "When you're done, please comment again with `done`. Your flair will "
-        "be updated to reflect the number of posts you've transcribed and "
-        "they will be marked as completed."
-        "\n\n"
-        "Post type: {post_type}. Please use the following formatting:"
-        "\n\n---\n\n"
-        "{formatting}"
-        "\n\n---\n\n"
-        "## Footer"
-        "\n\n"
-        "When you're done, please put the following footer at the **bottom** "
-        "of your post:"
-        "\n\n---\n\n"
-        "{footer}"
-        "\n\n---\n\n"
-        "If you have any questions, feel free to [message the mods!]("
-        "{message_url})"
-    ),
-    "claim_success": (
-        "The post is yours! Best of luck and thanks for helping!"
-        "\n\n"
-        'Please respond with "done" when complete so we can check this one off '
-        "the list!"
-    ),
+    "mention": "Hi there! Thanks for pinging me!\n\nDue to some changes with how Reddit and individual subreddits handle bots, I can't be summoned directly to your comment anymore. If there's something that you would like assistance with, please post a link in /r/DescriptionPlease, and one of our lovely volunteers will be along shortly.\n\nThanks for using our services! We hope we can make your day a little bit better :)\n\nCheers,\n\nThe Mods of /r/TranscribersOfReddit",
+    "intro_comment": "If you would like to claim this post, please respond to this comment with the word `claiming` or `claim` in your response. I will automatically update the flair so that only one person is worker on a post at any given time.\n\nWhen you're done, please comment again with `done`. Your flair will be updated to reflect the number of posts you've transcribed and they will be marked as completed.\n\nPost type: {post_type}. Please use the following formatting:\n\n---\n\n{formatting}\n\n---\n\n## Footer\n\nWhen you're done, please put the following footer at the **bottom** of your post:\n\n---\n\n{footer}\n\n---\n\nIf you have any questions, feel free to [message the mods!]({message_url})",
+    "claim_success": 'The post is yours! Best of luck and thanks for helping!\n\nPlease respond with "done" when complete so we can check this one off the list!',
+    "no_transcript_found": "",
 }
 
 
@@ -87,10 +51,9 @@ def post_comment(repliable, body):
     Posts paginated replies to a comment, chaining each page as a reply to the
     previous comment "page".
 
-    :param repliable: Some object that responds to ``.reply()`` with str input
-                      and repliable object output.
+    :param repliable: Some object that responds to ``.reply()`` with str input and repliable object output.
     :param body: String value for the body of a comment to be made
-    :return: The last page of the comments that were posted.
+    :return: The comment that was posted. If required to page a long reply across multiple comments, it's the last one in the series
     """
     reddit_max_length = 9900  # 10k chars with 100 chars for margin of error
 
@@ -165,7 +128,9 @@ class CommentWrapper(object):
                     self._page += wrapped[0]
                     self._new_page()
 
-                    line = line[len(wrapped[0]) :]
+                    length = len(wrapped[0])
+
+                    line = line[length:]
                     continue  # while
                 else:
                     # For simplicity, we're going to start a new page for

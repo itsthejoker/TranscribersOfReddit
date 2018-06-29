@@ -46,8 +46,7 @@ def ping(author: str, arg: str, svc: Any) -> str:
     arg     -> (ignored)
     svc     -> (ignored)
     """
-    # TODO: Fill this out to have every worker check-in, then reply with the
-    # aggregate responses of everyone.
+    # TODO: Extend to have every worker check in
     return "Pong!"
 
 

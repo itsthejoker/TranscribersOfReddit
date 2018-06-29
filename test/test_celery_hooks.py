@@ -1,5 +1,3 @@
-import pytest
-
 from tor.celeryconfig import Config
 
 import unittest
@@ -13,7 +11,7 @@ class CeleryConfigHooksTest(unittest.TestCase):
         assert hasattr(self.c, "timezone")
         assert self.c.timezone == "UTC", "always use UTC for timezone"
         assert hasattr(self.c, "enable_utc")
-        assert self.c.enable_utc == True, "always use UTC for timezone"
+        assert self.c.enable_utc is True, "always use UTC for timezone"
 
         assert hasattr(
             self.c, "task_default_queue"

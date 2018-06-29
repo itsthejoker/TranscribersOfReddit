@@ -271,8 +271,8 @@ def process_comment(self, comment_id):
     elif is_claimed_post_response(reply.parent()):
         if re.search(r"\b(?:done|deno)\b", body):
             verify_post_complete.delay(comment_id=reply.id)
-        elif re.search(r"(?=<^|\W)!override\b", body):  # pragma: no coverage
-            # TODO: Fill out override scenario and remove pragma directive
+        elif re.search(r"(?=<^|\W)!override\b", body):
+            # TODO: Handle `!override`
             pass
         else:
             unhandled_comment.delay(comment_id=reply.id, body=reply.body)
@@ -302,7 +302,7 @@ def claim_post(self, comment_id, verify=True, first_claim=False):
 
     update_post_flair.delay(comment.submission.id, "In Progress")
     if first_claim:
-        # TODO: replace with more first-time friendly of a response
+        # TODO: replace with first-timer response
         post_comment(repliable=comment, body=bot_msg["claim_success"])
     else:
         post_comment(repliable=comment, body=bot_msg["claim_success"])
@@ -340,8 +340,7 @@ def verify_post_complete(self, comment_id):
     if transcription_id:
         mark_post_complete.delay(comment.submission.id, "Completed!")
     else:
-        # TODO: no transcription found. Comment to that effect
-        pass
+        post_comment(repliable=comment, body=bot_msg["no_transcript_found"])
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
@@ -409,7 +408,7 @@ def post_to_tor(self, sub, title, link, domain, post_id, media_link=None):
     self.redis.incr("total_posted", amount=1)
     self.redis.incr("total_new", amount=1)
 
-    # TODO: OCR job for this comment
+    # TODO: Queue a job for OCR to handle this comment
     reply = bot_msg["intro_comment"].format(
         post_type=post_type,
         formatting=post_template,
