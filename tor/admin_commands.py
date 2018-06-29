@@ -1,6 +1,6 @@
 from tor_core.config import Config
 
-from typing import Any
+from typing import Any, Dict
 
 """
 This is a manifest of methods we call for the admin command system. All methods
@@ -62,7 +62,7 @@ def process_blacklist(author: str, arg: str, svc: Any) -> str:
     """
     users = arg.splitlines()
     config = Config.subreddit("TranscribersOfReddit")
-    failed = {
+    failed: Dict[str, str] = {
         # "username": "reason"
     }
     succeeded = []
@@ -71,7 +71,7 @@ def process_blacklist(author: str, arg: str, svc: Any) -> str:
         if config.globals.is_moderator(user):
             failed[user] = "is a moderator"
 
-        elif svc.http.get(f"https://reddit.com/u/{user}.json").status_code == 404:
+        elif svc.http.head(f"https://reddit.com/u/{user}.json").status_code == 404:
             failed[user] = "is not a valid username on Reddit"
 
         elif svc.redis.sadd("blacklist", user):
@@ -80,7 +80,7 @@ def process_blacklist(author: str, arg: str, svc: Any) -> str:
         else:
             failed[user] = "is already blacklisted"
 
-    out = f"Blacklist: " f"{len(failed.keys())} failed, " f"{len(succeeded)} succeeded\n"
+    out = f"Blacklist: {len(failed.keys())} failed, {len(succeeded)} succeeded\n"
 
     for user, reason in failed.items():
         out += f"\n- **{user}** {reason}"
