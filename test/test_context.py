@@ -108,9 +108,14 @@ class IsClaimedTest(unittest.TestCase):
 
 @pytest.mark.skipif(
     not os.getenv("EXTERNAL_ACCESS"),
-    reason="Skipping tests that require access to YouTube",
+    reason="Skipping tests that require access to YouTube (Enable with `EXTERNAL_ACCESS=1`)",
 )
 class IsYoutubeCaptionTest(unittest.TestCase):
+    def test_not_a_link(self):
+        link = ""
+
+        assert not has_youtube_captions(link)
+
     def test_video_with_caption(self):
         link = "https://www.youtube.com/watch?v=RnaEqiVnad0"
 
