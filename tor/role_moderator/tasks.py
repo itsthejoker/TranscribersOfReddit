@@ -5,6 +5,7 @@ from tor.context import (
     find_transcription_comment_id,
     is_claimable_post,
     is_claimed_post_response,
+    is_completed_response,
     is_code_of_conduct,
     has_youtube_captions,
 )
@@ -269,7 +270,7 @@ def process_comment(self, comment_id):
             unhandled_comment.delay(comment_id=reply.id, body=reply.body)
 
     elif is_claimed_post_response(reply.parent()):
-        if re.search(r"\b(?:done|deno)\b", body):
+        if is_completed_response(reply):
             verify_post_complete.delay(comment_id=reply.id)
         elif re.search(r"(?=<^|\W)!override\b", body):
             # TODO: Handle `!override`
@@ -340,7 +341,7 @@ def verify_post_complete(self, comment_id):
         author=comment.author.name, post=other_post, http=self.http, log=log
     )
     if transcription_id:
-        mark_post_complete.delay(comment.submission.id, "Completed!")
+        mark_post_complete.delay(comment.submission.id)
     else:
         post_comment(repliable=comment, body=bot_msg["no_transcript_found"])
 

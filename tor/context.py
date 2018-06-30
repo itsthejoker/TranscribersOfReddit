@@ -1,6 +1,7 @@
 from logging import Logger
 from typing import Optional
 import time
+import re
 
 from praw.models import Comment, Submission
 from requests import Session
@@ -35,6 +36,13 @@ def is_code_of_conduct_body(text: str) -> bool:
 
 def is_claimed_post_response(comment: Comment) -> bool:
     if is_claimed_post_flair(comment.submission.link_flair_text):
+        return True
+
+    return False
+
+
+def is_completed_response(comment: Comment) -> bool:
+    if re.search(r"\b(?:done|deno)\b", comment.body):
         return True
 
     return False
