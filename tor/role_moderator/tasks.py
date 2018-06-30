@@ -282,7 +282,6 @@ def process_comment(self, comment_id):
 # TODO: Test support
 @app.task(bind=True, ignore_result=True, base=Task)
 def override_validation(self, comment_id):
-    # signature() lines go here
     mark_post_complete = signature("tor.role_moderator.tasks.mark_post_complete")
 
     comment = self.reddit.comment(comment_id)

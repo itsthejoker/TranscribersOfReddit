@@ -218,33 +218,17 @@ class ProcessDoneCommentTest(unittest.TestCase):
 
     @patch("tor.role_moderator.tasks.signature", side_effect=signature)
     @patch("tor.role_moderator.tasks.process_comment.reddit")
-    def test_override_as_admin(self, mock_reddit, mock_signature):
+    def test_override(self, mock_reddit, mock_signature):
         mock_reddit.comment = MagicMock(name="comment", return_value=self.comment)
 
         self.comment.body = "!override"
         self.comment.author = generate_redditor(username="tor_mod5")
         process_comment(self.comment.id)
-        # TODO: Assert !override task is called
+        signature(
+            "tor.role_moderator.tasks.override_validation"
+        ).delay.assert_called_once_with(comment_id=self.comment.id)
 
-        assert_only_tasks_called(
-            # TODO: Assert only the !override task is called
-        )
-        mock_reddit.comment.assert_any_call(self.comment.id)
-
-    @patch("tor.role_moderator.tasks.signature", side_effect=signature)
-    @patch("tor.role_moderator.tasks.process_comment.reddit")
-    def test_override_as_anon(self, mock_reddit, mock_signature):
-        mock_reddit.comment = MagicMock(name="comment", return_value=self.comment)
-
-        self.comment.body = "!override"
-        # TODO: Test exception being thrown because unprivileged user???
-        process_comment(self.comment.id)
-        # TODO: more to come when actual functionality is built-out
-
-        assert_no_tasks_called()
-        # assert_only_tasks_called(
-        #     # TODO
-        # )
+        assert_only_tasks_called("tor.role_moderator.tasks.override_validation")
         mock_reddit.comment.assert_any_call(self.comment.id)
 
     @patch("tor.role_moderator.tasks.signature", side_effect=signature)
