@@ -245,6 +245,7 @@ def process_comment(self, comment_id):
     unhandled_comment = signature("tor.role_anyone.tasks.unhandled_comment")
     claim_post = signature("tor.role_moderator.tasks.claim_post")
     verify_post_complete = signature("tor.role_moderator.tasks.verify_post_complete")
+    override_validation = signature("tor.role_moderator.tasks.override_validation")
 
     reply = self.reddit.comment(comment_id)
 
@@ -273,10 +274,35 @@ def process_comment(self, comment_id):
         if is_completed_response(reply):
             verify_post_complete.delay(comment_id=reply.id)
         elif re.search(r"(?=<^|\W)!override\b", body):
-            # TODO: Handle `!override`
-            pass
+            override_validation.delay(comment_id=reply.id)
         else:
             unhandled_comment.delay(comment_id=reply.id, body=reply.body)
+
+
+# TODO: Test support
+@app.task(bind=True, ignore_result=True, base=Task)
+def override_validation(self, comment_id):
+    # signature() lines go here
+    mark_post_complete = signature("tor.role_moderator.tasks.mark_post_complete")
+
+    comment = self.reddit.comment(comment_id)
+    config = Config.subreddit("TranscribersOfReddit")
+
+    bot_comment = comment.parent
+    override_target = bot_comment.parent
+
+    # Confirm permission to take this action
+    if not config.globals.is_moderator(comment.author):
+        log.warning(f"DENIED: {comment.author} is not allowed to call !override")
+
+        post_comment(repliable=comment, body=config.gifs.no)
+        return
+
+    if not is_completed_response(override_target):
+        raise InvalidState(
+            'Unable to override a post as completed with no "done" response'
+        )
+    mark_post_complete.delay(override_target.submission.id)
 
 
 # TODO: Test support
