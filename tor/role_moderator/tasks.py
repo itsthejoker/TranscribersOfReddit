@@ -440,6 +440,7 @@ def post_to_tor(self, sub, title, link, domain, post_id, media_link=None):
     self.redis.incr("total_new", amount=1)
 
     # TODO: Queue a job for OCR to handle this comment
+
     reply = bot_msg["intro_comment"].format(
         post_type=post_type,
         formatting=post_template,

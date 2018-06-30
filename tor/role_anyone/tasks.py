@@ -143,7 +143,7 @@ def bump_user_transcriptions(self, username: str, by: int):
     u.set("transcriptions", count)
     u.save()
 
-    # TODO: Call out to reddit to set the flair
+    # TODO: Call out to reddit to set user flair
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
