@@ -77,6 +77,21 @@ def post_comment(repliable, body):
     return last
 
 
+def get_flair_css(transcription_count: int):
+    if transcription_count >= 1000:
+        return "grafeas-diamond"
+    elif transcription_count >= 501:
+        return "grafeas-golden"
+    elif transcription_count >= 251:
+        return "grafeas-purple"
+    elif transcription_count >= 101:
+        return "grafeas-teal"
+    elif transcription_count >= 51:
+        return "grafeas-green"
+    else:
+        return "grafeas"
+
+
 class CommentWrapper(object):
     """
     Splits comments that are too long for later pagination. Assumes comments are

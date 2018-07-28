@@ -137,20 +137,28 @@ def unhandled_comment(self, comment_id, body):
 
 @app.task(bind=True, ignore_result=True, base=Task)
 def bump_user_transcriptions(self, username: str, by: int):
+    persist_transcription_count = signature(
+        "tor.role_moderator.tasks.persist_transcription_count"
+    )
+
     u = User(username, redis_conn=self.redis)
     count = u.get("transcriptions")
     count += by
     u.set("transcriptions", count)
     u.save()
 
-    # TODO: Call out to reddit to set user flair
+    persist_transcription_count.delay(username=username)
 
 
 @app.task(bind=True, ignore_result=True, base=Task)
 def test_system(self):  # pragma: no coverage
+    """
+    This method purely exists to test routing and queues for the Celery worker queue framework
+    """
     import time
     import random
 
+    log.info("Executing task in role_anyone")
     log.info("starting task")
     time.sleep(random.choice(range(10)))
     log.info("done with task")

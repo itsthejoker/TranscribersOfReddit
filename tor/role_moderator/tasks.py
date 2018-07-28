@@ -1,5 +1,6 @@
 from tor_core import OUR_BOTS
 from tor_core.config import Config
+from tor_core.users import User
 from tor.context import (
     InvalidState,
     find_transcription_comment_id,
@@ -13,6 +14,7 @@ from tor.user_interaction import (
     format_bot_response as _,
     message_link,
     post_comment,
+    get_flair_css,
     responses as bot_msg,
 )
 from tor.task_base import Task, InvalidUser
@@ -279,6 +281,23 @@ def process_comment(self, comment_id):
             unhandled_comment.delay(comment_id=reply.id, body=reply.body)
 
 
+@app.task(bind=True, ignore_result=True, base=Task)
+def persist_transcription_count(self, username: str):
+    """
+    Persists all of the relevant data for a transcriber from Redis to Reddit
+    """
+
+    u = User(username, redis_conn=self.redis)
+    transcriptions = u.get("transcriptions", 0)
+    title = u.get("flair_title", "Beta Tester")
+    css = get_flair_css(transcriptions)
+
+    flair_text = f"{transcriptions} Γ - {title}"
+    self.reddit.subreddit("TranscribersOfReddit").flair.set(
+        redditor=username, text=flair_text, css_class=css
+    )
+
+
 # TODO: Test support
 @app.task(bind=True, ignore_result=True, base=Task)
 def override_validation(self, comment_id):
@@ -447,3 +466,17 @@ def post_to_tor(self, sub, title, link, domain, post_id, media_link=None):
         message_url=message_link(subject="General Questions"),
     )
     post_comment(repliable=submission, body=reply)
+
+
+@app.task(bind=True, ignore_result=True, base=Task)
+def test_system(self):  # pragma: no coverage
+    """
+    This method purely exists to test routing and queues for the Celery worker queue framework
+    """
+    import time
+    import random
+
+    log.info("Executing task in role_moderator")
+    log.info("starting task")
+    time.sleep(random.choice(range(10)))
+    log.info("done with task")
