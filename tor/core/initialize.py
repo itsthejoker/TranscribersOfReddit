@@ -7,6 +7,7 @@ import redis
 from bugsnag.handlers import BugsnagHandler
 from praw import Reddit
 from slackclient import SlackClient
+
 from tor.core import __HEARTBEAT_FILE__
 from tor.core.config import config
 from tor.core.heartbeat import configure_heartbeat
@@ -31,24 +32,6 @@ def configure_tor(cfg):
         tor = cfg.r.subreddit('transcribersofreddit')
 
     return tor
-
-
-def configure_redis():
-    """
-    Creates a connection to the local Redis server, then returns the active
-    connection.
-
-    :return: object: the active Redis object.
-    """
-    try:
-        url = os.getenv('REDIS_CONNECTION_URL', 'redis://localhost:6379/0')
-        redis_server = redis.StrictRedis.from_url(url)
-        redis_server.ping()
-    except redis.exceptions.ConnectionError:
-        logging.fatal("Redis server is not running! Exiting!")
-        sys.exit(1)
-
-    return redis_server
 
 
 def configure_logging(cfg, log_name='transcribersofreddit.log'):
