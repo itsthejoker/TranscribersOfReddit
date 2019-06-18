@@ -168,25 +168,6 @@ def get_parent_post_id(post, r):
             return r.submission(id=clean_id(post.parent_id))
 
 
-def get_wiki_page(pagename, cfg):
-    """
-    Return the contents of a given wiki page.
-
-    :param pagename: String. The name of the page to be requested.
-    :param cfg: Dict. Global config object.
-    :return: String or None. The content of the requested page if
-        present else None.
-    """
-    logging.debug(f'Retrieving wiki page {pagename}')
-    try:
-        result = cfg.tor.wiki[pagename].content_md
-        if result != '':
-            return result
-    except prawcore.exceptions.NotFound:
-        pass
-    return None
-
-
 def stop_heartbeat():
     """
     Any logic that goes along with stopping the cherrypy heartbeat server goes

@@ -21,7 +21,7 @@ def configure_logging(cfg):
 
 def populate_header(cfg):
     cfg.header = ''
-    cfg.header = get_wiki_page('format/header', cfg)
+    cfg.header = cfg.get_wiki_page('format/header')
 
 
 def populate_formatting(cfg):
@@ -37,10 +37,10 @@ def populate_formatting(cfg):
     cfg.image_formatting = ''
     cfg.other_formatting = ''
 
-    cfg.audio_formatting = get_wiki_page('format/audio', cfg)
-    cfg.video_formatting = get_wiki_page('format/video', cfg)
-    cfg.image_formatting = get_wiki_page('format/images', cfg)
-    cfg.other_formatting = get_wiki_page('format/other', cfg)
+    cfg.audio_formatting = cfg.get_wiki_page('format/audio')
+    cfg.video_formatting = cfg.get_wiki_page('format/video')
+    cfg.image_formatting = cfg.get_wiki_page('format/images')
+    cfg.other_formatting = cfg.get_wiki_page('format/other')
 
 
 def populate_domain_lists(cfg):
@@ -55,7 +55,7 @@ def populate_domain_lists(cfg):
     cfg.image_domains = []
     cfg.audio_domains = []
 
-    domains = get_wiki_page('domains', cfg)
+    domains = cfg.get_wiki_page('domains')
     domains = ''.join(domains.splitlines()).split('---')
 
     for domainset in domains:
@@ -84,16 +84,13 @@ def populate_subreddit_lists(cfg):
     cfg.upvote_filter_subs = {}
     cfg.no_link_header_subs = []
 
-    cfg.subreddits_to_check = get_wiki_page('subreddits',
-                                            cfg).splitlines()
+    cfg.subreddits_to_check = cfg.get_wiki_page('subreddits').splitlines()
     cfg.subreddits_to_check = clean_list(cfg.subreddits_to_check)
     logging.debug(
         f'Created list of subreddits from wiki: {cfg.subreddits_to_check}'
     )
 
-    for line in get_wiki_page(
-        'subreddits/upvote-filtered', cfg
-    ).splitlines():
+    for line in cfg.get_wiki_page('subreddits/upvote-filtered').splitlines():
         if ',' in line:
             sub, threshold = line.split(',')
             cfg.upvote_filter_subs[sub] = int(threshold)
@@ -103,27 +100,21 @@ def populate_subreddit_lists(cfg):
         f'{cfg.upvote_filter_subs} '
     )
 
-    cfg.subreddits_domain_filter_bypass = get_wiki_page(
-        'subreddits/domain-filter-bypass', cfg
-    ).split('\r\n')
-    cfg.subreddits_domain_filter_bypass = clean_list(
-        cfg.subreddits_domain_filter_bypass
-    )
+    cfg.subreddits_domain_filter_bypass = cfg.get_wiki_page('subreddits/domain-filter-bypass').splitlines()
+    cfg.subreddits_domain_filter_bypass = clean_list(cfg.subreddits_domain_filter_bypass)
     logging.debug(
         f'Retrieved subreddits that bypass the domain filter: '
         f'{cfg.subreddits_domain_filter_bypass} '
     )
 
-    cfg.no_link_header_subs = get_wiki_page(
-        'subreddits/no-link-header', cfg
-    ).split('\r\n')
+    cfg.no_link_header_subs = cfg.get_wiki_page('subreddits/no-link-header').splitlines()
     cfg.no_link_header_subs = clean_list(cfg.no_link_header_subs)
     logging.debug(
         f'Retrieved subreddits subject to the upvote filter: '
         f'{cfg.no_link_header_subs} '
     )
 
-    lines = get_wiki_page('subreddits/archive-time', cfg).splitlines()
+    lines = cfg.get_wiki_page('subreddits/archive-time').splitlines()
     cfg.archive_time_default = int(lines[0])
     cfg.archive_time_subreddits = {}
     for line in lines[1:]:
@@ -135,7 +126,7 @@ def populate_subreddit_lists(cfg):
 def populate_gifs(cfg):
     # zero it out so we can load more
     cfg.no_gifs = []
-    cfg.no_gifs = get_wiki_page('usefulgifs/no', cfg).split('\r\n')
+    cfg.no_gifs = cfg.get_wiki_page('usefulgifs/no').splitlines()
 
 
 def initialize(cfg):

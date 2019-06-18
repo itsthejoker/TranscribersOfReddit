@@ -3,9 +3,10 @@ import random
 
 import praw
 from praw.models import Message as RedditMessage
+
 from tor import __BOT_NAMES__
-from tor.core.helpers import (_, clean_id, get_parent_post_id, get_wiki_page,
-                              reports, send_to_modchat)
+from tor.core.helpers import (_, clean_id, get_parent_post_id, reports,
+                              send_to_modchat)
 from tor.core.strings import reddit_url
 from tor.core.users import User
 from tor.core.validation import verified_posted_transcript
@@ -101,7 +102,7 @@ def process_claim(post, cfg, first_time=False):
         if not coc_accepted(post, cfg):
             # do not cache this page. We want to get it every time.
             post.reply(_(
-                please_accept_coc.format(get_wiki_page('codeofconduct', cfg))
+                please_accept_coc.format(cfg.get_wiki_page('codeofconduct'))
             ))
             return
 

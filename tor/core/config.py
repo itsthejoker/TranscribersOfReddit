@@ -5,6 +5,7 @@ import random
 from typing import List
 
 import praw
+import prawcore.exceptions
 from slackclient import SlackClient
 
 from tor import __friendly_name__, __root__, __version__
@@ -143,6 +144,23 @@ class ServiceConfig(BotInfo):
             return self.r.subreddit('ModsOfToR')
         else:
             return self.r.subreddit('transcribersofreddit')
+
+    def get_wiki_page(self, page_name):
+        """
+        Return the contents of a given wiki page.
+
+        :param page_name: String. The name of the page to be requested.
+        :return: String or None. The content of the requested page if
+            present else None.
+        """
+        logging.debug(f'Retrieving wiki page {page_name}')
+        try:
+            result = self.tor.wiki[page_name].content_md
+            if result != '':
+                return result
+        except prawcore.exceptions.NotFound:
+            pass
+        return None
 
     @cached_property
     def redis(self):
