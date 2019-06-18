@@ -6,6 +6,7 @@ import time
 
 import praw
 import prawcore
+
 from tor.core import __version__
 from tor.core.config import config
 from tor.core.heartbeat import stop_heartbeat_server
@@ -167,28 +168,23 @@ def get_parent_post_id(post, r):
             return r.submission(id=clean_id(post.parent_id))
 
 
-def get_wiki_page(pagename, cfg, return_on_fail=None, subreddit=None):
+def get_wiki_page(pagename, cfg):
     """
     Return the contents of a given wiki page.
 
     :param pagename: String. The name of the page to be requested.
     :param cfg: Dict. Global config object.
-    :param return_on_fail: Any value to return when nothing is found
-        at the requested page. This allows us to specify returns for
-        easier work in debug mode.
-    :param subreddit: Object. A specific PRAW Subreddit object if we
-        want to interact with a different sub.
     :return: String or None. The content of the requested page if
         present else None.
     """
-    if not subreddit:
-        subreddit = cfg.tor
     logging.debug(f'Retrieving wiki page {pagename}')
     try:
-        result = subreddit.wiki[pagename].content_md
-        return result if result != '' else return_on_fail
+        result = cfg.tor.wiki[pagename].content_md
+        if result != '':
+            return result
     except prawcore.exceptions.NotFound:
-        return return_on_fail
+        pass
+    return None
 
 
 def update_wiki_page(pagename, content, cfg, subreddit=None):
