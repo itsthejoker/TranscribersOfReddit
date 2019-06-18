@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import time
 
@@ -9,7 +10,7 @@ from tor import __version__
 from tor.core.config import config
 from tor.core.helpers import run_until_dead
 from tor.core.inbox import check_inbox
-from tor.core.initialize import build_bot
+from tor.core.initialize import build_bot, configure_logging
 from tor.helpers.flair import set_meta_flair_on_other_posts
 from tor.helpers.threaded_worker import threaded_check_submissions
 
@@ -89,6 +90,14 @@ def run(cfg):
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(levelname)s | %(funcName)s | %(message)s',
+        datefmt='%Y-%m-%dT%H:%M:%S',
+    )
+
+    configure_logging(config)
+
     config.debug_mode = DEBUG_MODE
 
     if config.debug_mode:

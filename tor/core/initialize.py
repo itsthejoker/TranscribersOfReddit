@@ -34,14 +34,7 @@ def configure_tor(cfg):
     return tor
 
 
-def configure_logging(cfg, log_name='transcribersofreddit.log'):
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(levelname)s | %(funcName)s | %(message)s',
-        datefmt='%Y-%m-%dT%H:%M:%S',
-    )
-
-    # will intercept anything error level or above
+def configure_logging(cfg):
     if cfg.bugsnag_api_key:
         bs_handler = BugsnagHandler()
         bs_handler.setLevel(logging.ERROR)
@@ -242,7 +235,6 @@ def build_bot(
     name,
     version,
     full_name=None,
-    log_name='transcribersofreddit.log',
     require_redis=True,
     heartbeat_logging=False
 ):
@@ -255,8 +247,6 @@ def build_bot(
     :param version: string; the version number for the current bot being run
     :param full_name: string; the descriptive name of the current bot being
         run; this is used for the heartbeat and status
-    :param log_name: string; the name to be used for the log file on disk. No
-        spaces.
     :param require_redis: bool; triggers the creation of the Redis instance.
         Any bot that does not require use of Redis can set this to False and
         not have it crash on start because Redis isn't running.
@@ -268,7 +258,6 @@ def build_bot(
     config.name = full_name if full_name else name
     config.bot_version = version
     config.heartbeat_logging = heartbeat_logging
-    configure_logging(config, log_name=log_name)
     configure_modchat(config)
 
     if not require_redis:
