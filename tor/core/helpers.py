@@ -187,45 +187,6 @@ def get_wiki_page(pagename, cfg):
     return None
 
 
-def update_wiki_page(pagename, content, cfg, subreddit=None):
-    """
-    Sends new content to the requested wiki page.
-
-    :param pagename: String. The name of the page to be edited.
-    :param content: String. New content for the wiki page.
-    :param cfg: Dict. Global config object.
-    :param subreddit: Object. A specific PRAW Subreddit object if we
-        want to interact with a different sub.
-    :return: None.
-    """
-
-    logging.debug(f'Updating wiki page {pagename}')
-
-    if not subreddit:
-        subreddit = cfg.tor
-
-    try:
-        return subreddit.wiki[pagename].edit(content)
-    except prawcore.exceptions.NotFound as e:
-        logging.error(
-            f'{e} - Requested wiki page {pagename} not found. Cannot update.'
-        )
-
-
-def deactivate_heartbeat_port(port):
-    """
-    This isn't used as part of the normal functions; when a port is created,
-    it gets used again and again. The point of this function is to deregister
-    the port that the status page checks, but would probably only be used by
-    the command line.
-
-    :param port: int, the port number
-    :return: None
-    """
-    config.redis.srem('active_heartbeat_ports', port)
-    logging.info('Removed port from set of heartbeats.')
-
-
 def stop_heartbeat():
     """
     Any logic that goes along with stopping the cherrypy heartbeat server goes

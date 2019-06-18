@@ -8,7 +8,6 @@ from bugsnag.handlers import BugsnagHandler
 from praw import Reddit
 from slackclient import SlackClient
 
-from tor.core import __HEARTBEAT_FILE__
 from tor.core.config import config
 from tor.core.heartbeat import configure_heartbeat
 from tor.core.helpers import clean_list, get_wiki_page, log_header
@@ -190,37 +189,6 @@ def initialize(cfg):
     logging.debug('Mod list loaded.')
     populate_gifs(cfg)
     logging.debug('Gifs loaded.')
-
-
-def get_heartbeat_port(cfg):
-    """
-    Attempts to pull an existing port number from the filesystem, and if it
-    doesn't find one then it generates the port number and saves it to a key
-    file.
-
-    :param cfg: the global config object
-    :return: int; the port number to use.
-    """
-    try:
-        # have we already reserved a port for this process?
-        with open(__HEARTBEAT_FILE__, 'r') as port_file:
-            port = int(port_file.readline().strip())
-        logging.debug('Found existing port saved on disk')
-        return port
-    except OSError:
-        pass
-
-    while True:
-        port = random.randrange(40000, 40200)  # is 200 ports too much?
-        if cfg.redis.sismember('active_heartbeat_ports', port) == 0:
-            cfg.redis.sadd('active_heartbeat_ports', port)
-
-            # create that file we looked for earlier
-            with open(__HEARTBEAT_FILE__, 'w') as port_file:
-                port_file.write(str(port))
-            logging.debug(f'generated port {port} and saved to disk')
-
-            return port
 
 
 def configure_modchat(cfg):
