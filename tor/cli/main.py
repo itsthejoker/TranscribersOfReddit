@@ -90,6 +90,8 @@ def run(cfg):
 
 
 def main():
+    opts = parse_arguments()
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(levelname)s | %(funcName)s | %(message)s',
