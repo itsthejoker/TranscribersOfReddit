@@ -61,120 +61,29 @@ class cached_property(object):
         return value
 
 
-class BaseConfig(object):
-    """
-    A base class used for all media-specific settings, e.g.,
-    video, audio, image. This is intended to provide a unified
-    interface, regardless of the actual media, to ask questions of
-    the configuration:
-
-        - What is the formatting string for this media?
-        - What domains are whitelisted for this media?
-
-    The inheritance model here is for easy type-checking from tests,
-    allowing for validation of an expected interface in a quicker
-    manner.
-
-    Specify overridden values on object instantiation for purposes
-    of testing and by pulling from remote source (e.g., Reddit Wiki)
-    """
-
-    # Whitelisted domains
-    domains = []
-
-    formatting = ''
-
-
-class VideoConfig(BaseConfig):
-    """
-    Media-specific configuration class for video content
-
-    Initialization should pull from the appropriate Reddit Wiki
-    page and fill in the proper values.
-
-    Include any video-specific configuration rules here
-    """
-
-
-class AudioConfig(BaseConfig):
-    """
-    Media-specific configuration class for audio content
-
-    Initialization should pull from the appropriate Reddit Wiki
-    page and fill in the proper values.
-    """
-
-
-class ImageConfig(BaseConfig):
-    """
-    Media-specific configuration class for image content
-
-    Initialization should pull from the appropriate Reddit Wiki
-    page and fill in the proper values.
-    """
-
-
-class OtherContentConfig(BaseConfig):
-    """
-    Media-specific configuration class for any content that does not
-    fit in with the above media types. Articles, mostly.
-
-    Initialization should pull from the appropriate Reddit Wiki
-    page and fill in the proper values.
-    """
-
-
-class Subreddit(object):
-    """
-    Subreddit-specific configurations
-
-    Intended for asking questions of specific subreddits
-
-    NOTE: WIP - Do not use in its current form
-    """
-
-    def __init__(self):
-        """
-        WIP - Do not use in production code yet
-        """
-        # TODO: set if upvote filter is needed per-subreddit
-
-    def needs_upvote_filter(self):
-        """
-        TODO: fill in method based on subreddit rules
-        """
-
-
-class DefaultSubreddit(Subreddit):
-    """
-    A default configuration for subreddits that don't require
-    special rules
-    """
-
-
 class SubredditConfig(object):
     """
     A collection of Subreddit objects, injected later based on subreddit-specific rules
     """
 
     @cached_property
-    def subreddits(self) -> List[Subreddit]:
+    def subreddits(self) -> List[str]:
         return []  # TODO
 
     @cached_property
-    def subreddits_to_check(self) -> List[Subreddit]:
+    def subreddits_to_check(self) -> List[str]:
         return []  # TODO
 
     @cached_property
-    def subreddits_domain_filter_bypass(self) -> List[Subreddit]:
+    def subreddits_domain_filter_bypass(self) -> List[str]:
         return []  # TODO
 
     @cached_property
-    def upvote_filter_subs(self):
+    def upvote_filter_subs(self) -> List[str]:
         return {}  # TODO
 
     @cached_property
-    def no_link_header_subs(self):
+    def no_link_header_subs(self) -> List[str]:
         return []  # TODO
 
 
@@ -202,21 +111,6 @@ class MediaConfig(object):
     @cached_property
     def image_domains(self):
         return []  # TODO
-
-    @cached_property
-    def media(self):
-        """
-        Media-specific rules, which are fetchable by a dict key. These
-        are intended to be programmatically accessible based on a
-        parameter given instead of hardcoding the media type in a
-        switch-case style of control structure
-        """
-        return {
-            'audio': AudioConfig(),
-            'video': VideoConfig(),
-            'image': ImageConfig(),
-            'other': OtherContentConfig(),
-        }
 
 
 class HomeSubredditInfo(object):
