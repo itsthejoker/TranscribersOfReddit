@@ -6,7 +6,7 @@ import time
 # The `import tor` lines is necessary because `tor.__SELF_NAME__` is
 # set here. Reason: https://gist.github.com/TheLonelyGhost/9dbe810c42d8f2edcf3388a8b19519e1
 import tor
-from tor import __friendly_name__, __version__
+from tor import __version__
 from tor.core.config import config
 from tor.core.helpers import run_until_dead
 from tor.core.inbox import check_inbox
@@ -100,15 +100,7 @@ def main():
 
     configure_logging(config)
 
-    config.debug_mode = DEBUG_MODE
-
-    if config.debug_mode:
-        bot_name = 'debug'
-    else:
-        bot_name = os.environ.get('BOT_NAME', 'bot')
-
-    build_bot(bot_name, __version__, full_name=__friendly_name__)
-    config.perform_header_check = True
+    build_bot(config.bot_name, config.bot_version, full_name=config.name)
 
     tor.__SELF_NAME__ = config.r.user.me().name
     if tor.__SELF_NAME__ not in tor.__BOT_NAMES__:
