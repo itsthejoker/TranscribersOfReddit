@@ -1,6 +1,7 @@
 import logging
 
 import cherrypy
+
 from tor.core.config import config
 
 conf = {
@@ -58,7 +59,6 @@ class heartbeat(object):
         return {
             'bot_name': config.name,
             'bot_version': config.bot_version,
-            'core_version': config.core_version,
         }
 
 
