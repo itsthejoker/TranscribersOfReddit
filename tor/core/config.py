@@ -292,3 +292,7 @@ config.no_gifs = []
 config.heartbeat_logging = False
 
 config.modchat = Config.modchat
+
+config.api = ToR_API(
+    key=os.environ.get('TOR_API_KEY'), token=os.environ.get('TOR_API_TOKEN')
+)
