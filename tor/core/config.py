@@ -5,6 +5,7 @@ import random
 
 from tor import __root__, __version__
 from tor.core import __HEARTBEAT_FILE__
+from tor.core.api import ToR_API
 
 # Load configuration regardless of if bugsnag is setup correctly
 try:
