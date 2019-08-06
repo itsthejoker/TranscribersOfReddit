@@ -2,45 +2,33 @@ from praw.models import Submission
 from tor.core.config import Config
 
 
-def add_complete_post_id(
-    post_id: str, cfg: Config, return_result: bool = False
+def create_post_obj(
+        cfg: Config,
+        post_id: str=None,
+        post_url: [str, None]=None,
+        tor_url: [str, None]=None,
 ) -> [None, bool]:
-    """
-    Adds the post id to the complete_post_ids set in Redis. This is used to keep
-    track of which posts we've worked on and which ones we haven't.
+    result = cfg.api.post.create(
+        post_id=post_id,
+        post_url=post_url,
+        tor_url=tor_url
+    )
 
-    NOTE: This does not keep track of *transcribed* posts. This is only
-    used to track the actual posting process, from grabbing new posts
-    to actually creating the post with the "Unclaimed" tag.
-
-    :param post_id: string. The comment / post ID.
-    :param cfg: the global config dict.
-    :param return_result: Do we want to get the result back? Most of the time
-        we don't care.
-    """
-    result = cfg.redis.sadd("complete_post_ids", post_id)
-    if return_result:
-        return True if result == 1 else False
 
 
 def is_valid(post_id: str, cfg: Config) -> bool:
     """
-    Returns true or false based on whether the parent id is in a set of IDs.
-    It determines this by attempting to insert the value into the DB and
-    returning the result. If the result is already in the set, return False,
-    since we know we've already worked on that post. If we successfully
-    inserted it, then return True so we can process it.
+    Returns True or False based on whether or not we already have this post
+    on record. If the get call to the API returns data, then this is a post
+    that we've already processed and thus shouldn't touch again. If no data
+    is returned, then this is something that we can work on and so return
+    False.
 
-    :param post_id: string. The comment / post ID.
-    :param cfg: the global config object.
-    :return: True if the ID is successfully inserted into the set; False if
-        it's already there.
+    :param post_id: str. The reddit ID of the post in question.
+    :param cfg: The global config object.
     """
-
-    # if we get back a True, then we return True because the post was submitted
-    # successfully and it's good to work on. If the insert fails, then we
-    # want to return a False because we cannot work on that post again.
-    return add_complete_post_id(post_id, cfg, return_result=True)
+    result = cfg.api.post.get(post_id=post_id)
+    return True if result is None else False
 
 
 def is_removed(post: Submission, full_check: bool = False) -> bool:

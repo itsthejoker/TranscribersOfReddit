@@ -4,7 +4,7 @@ import random
 import praw
 from praw.models import Message as RedditMessage
 from tor import __BOT_NAMES__
-from tor.core.helpers import (_, clean_id, get_parent_post_id, get_wiki_page,
+from tor.core.helpers import (_, clean_id, get_parent_post, get_wiki_page,
                               reports, send_to_modchat)
 from tor.core.strings import reddit_url
 from tor.core.users import User
@@ -19,49 +19,48 @@ i18n = translation()
 
 def coc_accepted(post, cfg):
     """
-    Verifies that the user is in the Redis set "accepted_CoC".
+    Verifies that the user in question has accepted our code of conduct.
 
     :param post: the Comment object containing the claim.
     :param cfg: the global config dict.
     :return: True if the user has accepted the Code of Conduct, False if they
         haven't.
     """
-    return cfg.redis.sismember('accepted_CoC', post.author.name) == 1
+    return cfg.api.volunteer.get(username=post.author.name).get('accepted_coc', False)
 
 
 def process_coc(post, cfg):
     """
-    Adds the username of the redditor to the db as accepting the code of
-    conduct.
+    Create a new volunteer object and claim the post that they're working on.
 
     :param post: The Comment object containing the claim.
     :param cfg: the global config dict.
     :return: None.
     """
-    result = cfg.redis.sadd('accepted_CoC', post.author.name)
+    user = cfg.api.volunteer.get(username=post.author.name)
 
-    modchat_emote = random.choice([
-        ':tada:',
-        ':confetti_ball:',
-        ':party-lexi:',
-        ':party-parrot:',
-        ':+1:',
-        ':trophy:',
-        ':heartpulse:',
-        ':beers:',
-        ':gold:',
-        ':upvote:',
-        ':coolio:',
-        ':derp:',
-        ':lenny1::lenny2:',
-        ':panic:',
-        ':fidget-spinner:',
-        ':fb-like:'
-    ])
-
-    # Have they already been added? If 0, then just act like they said `claim`
-    # instead. If they're actually new, then send a message to slack.
-    if result == 1:
+    # Have they been here before and just used the wrong command?
+    # If they're actually new, then send a message to slack.
+    if not user:
+        cfg.api.volunteer.create(username=post.author.name)
+        modchat_emote = random.choice([
+            ':tada:',
+            ':confetti_ball:',
+            ':party-lexi:',
+            ':party-parrot:',
+            ':+1:',
+            ':trophy:',
+            ':heartpulse:',
+            ':beers:',
+            ':gold:',
+            ':upvote:',
+            ':coolio:',
+            ':derp:',
+            ':lenny1::lenny2:',
+            ':panic:',
+            ':fidget-spinner:',
+            ':fb-like:'
+        ])
         send_to_modchat(
             f'<{reddit_url.format("/user/" + post.author.name)}|u/{post.author.name}>'
             f' has just'
@@ -82,7 +81,24 @@ def process_claim(post, cfg, first_time=False):
     :param cfg: the global config dict.
     :return: None.
     """
-    top_parent = get_parent_post_id(post, cfg.r)
+    top_parent = get_parent_post(post, cfg.r)
+    # posts are stored based on the original content, not the version that we
+    # put on our subreddit. This is for future-proofing reasons, but it means
+    # that retrieving the content later is sometimes irritating.
+    post_obj = cfg.api.post.get(
+        id=top_parent.id_from_url(url=top_parent.url)
+    )
+
+    if not post_obj:
+        # Something went wrong -- what's most likely is that we're still in
+        # the migration phase and we're working with posts that were created
+        # through the old system but don't have an equal in the new system.
+        cfg.api.post.create(
+            post_id=top_parent.id_from_url(url=top_parent.url),
+            post_url=top_parent.url,
+            tor_url=cfg.r.config.reddit_url + top_parent.permalink
+        )
+        # post_id: str=None, post_url: str=None, tor_url: str=None
 
     already_claimed = i18n['responses']['claim']['already_claimed']
     claim_already_complete = i18n['responses']['claim']['already_complete']
@@ -156,7 +172,7 @@ def process_done(post, cfg, override=False, alt_text_trigger=False):
     :return: None.
     """
 
-    top_parent = get_parent_post_id(post, cfg.r)
+    top_parent = get_parent_post(post, cfg.r)
 
     done_cannot_find_transcript = i18n['responses']['done']['cannot_find_transcript']
     done_completed_transcript = i18n['responses']['done']['completed_transcript']

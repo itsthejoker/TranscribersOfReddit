@@ -30,8 +30,8 @@ def process_post(new_post, cfg):
         if new_post["ups"] < cfg.upvote_filter_subs[new_post["subreddit"]]:
             return
 
-    if not is_valid(new_post["name"], cfg):
-        logging.debug(id_already_handled_in_db.format(new_post["name"]))
+    if not is_valid(new_post["id"], cfg):
+        logging.debug(id_already_handled_in_db.format(new_post["id"]))
         return
 
     if new_post["archived"]:
@@ -42,7 +42,7 @@ def process_post(new_post, cfg):
         return
 
     logging.info(
-        f'Posting call for transcription on ID {new_post["name"]} posted by '
+        f'Posting call for transcription on ID {new_post["id"]} posted by '
         f'{new_post["author"]}'
     )
 
@@ -57,12 +57,12 @@ def process_post(new_post, cfg):
     elif new_post["domain"] in cfg.video_domains:
         if "youtu" in new_post["domain"]:
             if not valid_youtube_video(new_post["url"]):
-                create_post_obj(cfg, post_id=new_post["name"], post_url=new_post["url"])
+                create_post_obj(cfg, post_id=new_post["id"], post_url=new_post["url"])
                 return
             if get_yt_transcript(new_post["url"]):
-                np = cfg.r.submission(id=new_post["name"])
+                np = cfg.r.submission(id=new_post["id"])
                 np.reply(_(yt_already_has_transcripts))
-                create_post_obj(cfg, post_id=new_post["name"], post_url=new_post["url"])
+                create_post_obj(cfg, post_id=new_post["id"], post_url=new_post["url"])
                 logging.info(
                     f'Found YouTube video, {get_yt_video_id(new_post["url"])},'
                     f" with good transcripts."
@@ -100,22 +100,25 @@ def process_post(new_post, cfg):
         flair_post(result, flair.unclaimed)
 
         create_post_obj(
-            cfg, post_id=new_post["name"], post_url=new_post["url"], tor_url=result.url
+            cfg,
+            post_id=new_post["id"],
+            post_url=new_post["url"],
+            tor_url=cfg.r.config.reddit_url + result.permalink
         )
 
         if cfg.OCR and content_type == "image":
             # hook for OCR bot; in order to avoid race conditions, we add the
             # key / value pair that the bot isn't looking for before adding
             # to the set that it's monitoring.
-            cfg.redis.set(new_post["name"], result.fullname)
-            cfg.redis.rpush("ocr_ids", new_post["name"])
+            cfg.redis.set(new_post["id"], result.fullname)
+            cfg.redis.rpush("ocr_ids", new_post["id"])
 
     # The only errors that happen here are on Reddit's side -- pretty much
     # exclusively 503s and 403s that arbitrarily resolve themselves. A missed
     # post or two is not the end of the world.
     except Exception as e:
         logging.error(
-            f'{e} - unable to post content.\nID: {new_post["name"]}\n '
+            f'{e} - unable to post content.\nID: {new_post["id"]}\n '
             f'Title: {new_post["title"]}\n Subreddit: '
             f'{new_post["subreddit"]}'
         )

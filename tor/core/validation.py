@@ -1,4 +1,4 @@
-from tor.core.helpers import get_parent_post_id, send_to_modchat
+from tor.core.helpers import get_parent_post, send_to_modchat
 from tor.strings import translation
 
 i18n = translation()
@@ -116,7 +116,7 @@ def verified_posted_transcript(post, cfg):
     :param cfg: the global config object.
     :return: True if a post is found, False if not.
     """
-    top_parent = get_parent_post_id(post, cfg.r)
+    top_parent = get_parent_post(post, cfg.r)
 
     linked_resource = cfg.r.submission(
         top_parent.id_from_url(top_parent.url)

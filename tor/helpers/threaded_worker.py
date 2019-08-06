@@ -65,7 +65,7 @@ def get_subreddit_posts(sub: str) -> [List, None]:
             if not item['is_self']:
                 trimmed_links.append({
                     'subreddit': item['subreddit'],
-                    'name': item['name'],  # remember, this is the ID: t3_8swl2n
+                    'id': item['id'],  # remember, this is the ID: t3_8swl2n
                     'title': item['title'],
                     'permalink': item['permalink'],
                     'is_nsfw': item['over_18'],

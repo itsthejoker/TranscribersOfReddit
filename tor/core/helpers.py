@@ -142,13 +142,18 @@ def clean_id(post_id):
     `t3_`, but this doesn't always work for getting a new object. This
     method removes those prefixes and returns the rest.
 
+    Sometimes we might be working with an ID string that's already clean;
+    just return that sucker.
+
     :param post_id: String. Post fullname (ID)
     :return: String. Post fullname minus the first three characters.
     """
-    return post_id[post_id.index('_') + 1:]
+    try:
+        return post_id[post_id.index('_') + 1:]
+    except ValueError:
+        return post_id
 
-
-def get_parent_post_id(post, r):
+def get_parent_post(post, r):
     """
     Takes any given comment object and returns the object of the
     original post, no matter how far up the chain it is. This is
