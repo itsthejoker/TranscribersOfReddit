@@ -94,11 +94,11 @@ def _author_history_check(post, cfg):
             and _thread_title_check(post, history_post)
             and _thread_author_check(post, history_post, cfg)
         ):
-            return True
-    return False
+            return history_post
+    return None
 
 
-def verified_posted_transcript(post, cfg):
+def get_verified_transcript(post, cfg):
     """
     Because we're using basic gamification, we need to put in at least
     a few things to make it difficult to game the system. When a user
@@ -110,11 +110,12 @@ def verified_posted_transcript(post, cfg):
     Process:
     Get source link, check all comments, look for a root level comment
     by the author of the post and verify that the key is in their post.
-    Return True if found, False if not.
+    Try to return the comment object containing the transcription.
 
     :param post: The Comment object that contains the string 'done'.
     :param cfg: the global config object.
-    :return: True if a post is found, False if not.
+    :return: the comment object containing the transcription if one is found,
+        else return None.
     """
     top_parent = get_parent_post(post, cfg.r)
 
@@ -128,15 +129,16 @@ def verified_posted_transcript(post, cfg):
             _author_check(post, top_level_comment) and
             _footer_check(top_level_comment, cfg)
         ):
-            return True
+            return top_level_comment
 
     # Did their transcript get flagged by the spam filter? Check their history.
-    if _author_history_check(post, cfg):
+    author_result = _author_history_check(post, cfg)
+    if author_result:
         send_to_modchat(
             f'Found removed post: <{post.submission.shortlink}>',
             cfg,
             channel='#removed_posts'
         )
-        return True
+        return author_result
     else:
-        return False
+        return None

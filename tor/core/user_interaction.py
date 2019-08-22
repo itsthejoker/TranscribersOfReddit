@@ -8,7 +8,7 @@ from tor.core.helpers import (_, clean_id, get_parent_post, get_wiki_page,
                               reports, send_to_modchat)
 from tor.core.strings import reddit_url
 from tor.core.users import User
-from tor.core.validation import verified_posted_transcript
+from tor.core.validation import get_verified_transcript
 from tor.core.validation import _footer_check
 from tor.helpers.flair import flair, flair_post, update_user_flair
 from tor.helpers.reddit_ids import is_removed
@@ -89,16 +89,17 @@ def process_claim(post, cfg, first_time=False):
         id=top_parent.id_from_url(url=top_parent.url)
     )
 
-    if not post_obj:
+    if post_obj is None:
         # Something went wrong -- what's most likely is that we're still in
         # the migration phase and we're working with posts that were created
         # through the old system but don't have an equal in the new system.
-        cfg.api.post.create(
+        result = cfg.api.post.create(
             post_id=top_parent.id_from_url(url=top_parent.url),
             post_url=top_parent.url,
             tor_url=cfg.r.config.reddit_url + top_parent.permalink
         )
-        # post_id: str=None, post_url: str=None, tor_url: str=None
+        # noinspection PyUnusedLocal
+        post_obj = cfg.api.post.get(id=result['id'])
 
     already_claimed = i18n['responses']['claim']['already_claimed']
     claim_already_complete = i18n['responses']['claim']['already_complete']
@@ -131,7 +132,9 @@ def process_claim(post, cfg, first_time=False):
             flair_post(top_parent, flair.unclaimed)
 
         if flair.unclaimed in top_parent.link_flair_text:
-            # need to get that "Summoned - Unclaimed" in there too
+            user = cfg.api.volunteer.get(username=post.author.name)
+            cfg.api.post.claim(post_obj, user)
+
             post.reply(_(claim_success))
 
             flair_post(top_parent, flair.in_progress)
@@ -187,7 +190,9 @@ def process_done(post, cfg, override=False, alt_text_trigger=False):
         if flair.unclaimed in top_parent.link_flair_text:
             post.reply(_(done_still_unclaimed))
         elif top_parent.link_flair_text == flair.in_progress:
-            if not override and not verified_posted_transcript(post, cfg):
+            # back up this call so that we can save the transcription later
+            transcript = get_verified_transcript(post, cfg)
+            if not override and not transcript:
                 # we need to double-check these things to keep people
                 # from gaming the system
                 logging.info(
@@ -229,6 +234,22 @@ def process_done(post, cfg, override=False, alt_text_trigger=False):
                     f'Post {top_parent.fullname} completed by {post.author}!'
                 )
                 # get that information saved for the user
+                post_obj = cfg.api.post.get(
+                    post_id=top_parent.id_from_url(top_parent.url)
+                )
+                if not post_obj:
+                    raise Exception("APIError: no post_obj returned.")
+                volunteer_obj = cfg.api.volunteer.get(username=post.author)
+
+                result = cfg.api.transcription.create(
+                    post_obj=post_obj,
+                    volunteer_obj=volunteer_obj,
+                    transcription_text=transcript.body,
+                    transcription_url=transcript.url,
+                    transcription_id=transcript.id,
+                    removed_from_reddit=False
+                )
+
                 author = User(str(post.author), cfg.redis)
                 author.list_update('posts_completed', clean_id(post.fullname))
                 author.save()
