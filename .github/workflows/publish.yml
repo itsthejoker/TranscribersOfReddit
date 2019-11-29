@@ -1,4 +1,4 @@
-name: Upload assets on new Release
+name: Upload Python assets to GitHub
 
 on:
   push:
@@ -29,3 +29,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GHR_PATH: dist/
+  # docker:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - uses: zenato/docker-action@master
+  #     with:
+  #       username: 'github-actions'
+  #       password: ${{ secrets.GITHUB_TOKEN }}
+  #       repository: ${{ github.repository }}
+  #       registry: github.com
