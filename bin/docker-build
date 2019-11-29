@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+DIR="$(dirname -- "$0")"
+
+docker build --label org.grafeas.project=tor --tag grafeasgroup/tor:latest "${DIR}/.." "$@"
