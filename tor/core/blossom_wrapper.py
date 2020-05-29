@@ -151,6 +151,13 @@ class BlossomAPI:
         else:
             return BlossomResponse(status=BlossomStatus.not_found)
 
+    def accept_coc(self, username: str) -> BlossomResponse:
+        """Make the user with the specified username accept the CoC."""
+        # TODO: Link this to the call in Blossom.
+        # Make this method return not_found if the user is not found and
+        # already_complete if the user has already accepted the CoC.
+        return BlossomResponse()
+
     def get_submission(self, reddit_id: str) -> BlossomResponse:
         """Get the Blossom Submission corresponding to the provided Reddit ID."""
         response = self.get("/submission/", params={"original_id": reddit_id})

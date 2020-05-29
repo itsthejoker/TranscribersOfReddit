@@ -1,15 +1,14 @@
 import logging
 import random
-from typing import Tuple
 
-from praw.exceptions import APIException  # type: ignore
 from praw.models import Comment, Message  # type: ignore
 
 from tor import __BOT_NAMES__
 from tor.core.blossom_wrapper import BlossomStatus
 from tor.core.config import Config
-from tor.core.helpers import (_, get_wiki_page,
-                              remove_if_required, send_reddit_reply, send_to_modchat)
+from tor.core.helpers import (
+    _, get_wiki_page, remove_if_required, send_reddit_reply, send_to_modchat
+)
 from tor.core.validation import get_transcription
 from tor.helpers.flair import flair, flair_post, set_user_flair
 from tor.strings import translation
@@ -17,61 +16,51 @@ from tor.strings import translation
 i18n = translation()
 log = logging.getLogger(__name__)
 
-
-def coc_accepted(post: Comment, cfg: Config) -> bool:
-    """
-    Verifies that the user is in the Redis set "accepted_CoC".
-
-    :param post: the Comment object containing the claim.
-    :param cfg: the global config dict.
-    :return: True if the user has accepted the Code of Conduct, False if they
-        haven't.
-    """
-    return cfg.redis.sismember('accepted_CoC', post.author.name) == 1
+MODCHAT_EMOTES = [
+    ":badger:",
+    ":beers:",
+    ":catta-tappa:",
+    ":confetti_ball:",
+    ":coolio:",
+    ":derp:",
+    ":fb-like:",
+    ":fidget-spinner:",
+    ":gold:",
+    ":heartpulse:",
+    ":lenny1::lenny2:",
+    ":tada:",
+    ":partyblob:",
+    ":partylexi:",
+    ":party_parrot:",
+    ":trophy:",
+    ":upvote:",
+    ":+1:",
+]
 
 
 def process_coc(post: Comment, cfg: Config) -> None:
-    """
-    Adds the username of the redditor to the db as accepting the code of
-    conduct.
-
-    :param post: The Comment object containing the claim.
-    :param cfg: the global config dict.
-    :return: None.
-    """
-    result = cfg.redis.sadd('accepted_CoC', post.author.name)
-
-    modchat_emote = random.choice([
-        ':tada:',
-        ':confetti_ball:',
-        ':party-lexi:',
-        ':party-parrot:',
-        ':+1:',
-        ':trophy:',
-        ':heartpulse:',
-        ':beers:',
-        ':gold:',
-        ':upvote:',
-        ':coolio:',
-        ':derp:',
-        ':lenny1::lenny2:',
-        ':panic:',
-        ':fidget-spinner:',
-        ':fb-like:'
-    ])
-
-    # Have they already been added? If 0, then just act like they said `claim`
-    # instead. If they're actually new, then send a message to slack.
-    if result == 1:
+    """Process the acceptation of the CoC by the specified user."""
+    username = post.author.name
+    accept_response = cfg.blossom.accept_coc(username)
+    emote = random.choice(MODCHAT_EMOTES)
+    if accept_response.status == BlossomStatus.ok:
+        user_url = i18n['urls']['reddit_url'].format(f'/u/{username}')
+        post_url = i18n['urls']['reddit_url'].format(post.context)
         send_to_modchat(
-            f'<{i18n["urls"]["reddit_url"].format("/user/" + post.author.name)}|u/{post.author.name}>'
-            f' has just'
-            f' <{i18n["urls"]["reddit_url"].format(post.context)}|accepted the CoC!>'
-            f' {modchat_emote}',
+            f"<{user_url}|u/{username}> has just <{post_url}|accepted the CoC!> {emote}",
             cfg,
-            channel='new_volunteers'
+            channel="new_volunteers",
         )
-    process_claim(post, cfg, first_time=True)
+        process_claim(post, cfg, first_time=True)
+    elif accept_response.status == BlossomStatus.not_found:
+        send_reddit_reply(
+            post,
+            _(i18n["responses"]["general"]["coc_not_accepted"].format(
+                get_wiki_page("codeofconduct", cfg)
+            ))
+        )
+    else:
+        process_claim(post, cfg)
 
 
 def process_claim(post: Comment, cfg: Config, first_time=False) -> None:
@@ -219,44 +208,28 @@ def process_unclaim(post: Comment, cfg: Config) -> None:
     send_reddit_reply(post, _(message))
 
 
-def process_thanks(post: Comment, cfg: Config) -> None:
+def process_thanks(post: Comment) -> None:
     thumbs_up_gifs = i18n['urls']['thumbs_up_gifs']
     youre_welcome = i18n['responses']['general']['youre_welcome']
-    try:
-        post.reply(_(youre_welcome.format(random.choice(thumbs_up_gifs))))
-    except APIException as e:
-        if e.error_type == 'DELETED_COMMENT':
-            log.debug('Comment requiring thanks was deleted')
-            return
-        raise
+    send_reddit_reply(post, _(youre_welcome.format(random.choice(thumbs_up_gifs))))
 
 
-def process_wrong_post_location(post: Comment, cfg: Config) -> None:
-    transcript_on_tor_post = i18n['responses']['general']['transcript_on_tor_post']
-    try:
-        post.reply(_(transcript_on_tor_post))
-    except APIException:
-        log.debug('Something went wrong with asking about a misplaced post; ignoring.')
+def process_wrong_transcription_location(post: Comment) -> None:
+    """Send back a reply to the wrongly placed Transcription"""
+    send_reddit_reply(post, _(i18n["responses"]["general"]["transcript_on_tor_post"]))
 
 
 def process_message(message: Message, cfg: Config) -> None:
+    """Process the direct message by sending it to Slac and replying to the user."""
     dm_subject = i18n['responses']['direct_message']['dm_subject']
     dm_body = i18n['responses']['direct_message']['dm_body']
 
-    author = message.author
-    username = author.name if author else None
+    if author := message.author:
+        author.message(dm_subject, dm_body)
 
-    author.message(dm_subject, dm_body)
-
-    if username:
-        send_to_modchat(
-            f'DM from <{i18n["urls"]["reddit_url"].format("/u/" + username)}|u/{username}> -- '
-            f'*{message.subject}*:\n{message.body}', cfg
-        )
-        log.info(f'Received DM from {username}. \n Subject: {message.subject}\n\nBody: {message.body}')
+    username = author.name if author else "an unknown user"
+    if author:
+        link = f"<{i18n['urls']['reddit_url'].format(f'/u/{username}')}|u/{username}>"
+        send_to_modchat(f"DM from {link} -- *{message.subject}*:\n{message.body}", cfg)
     else:
-        send_to_modchat(
-            f'DM with no author -- '
-            f'*{message.subject}*:\n{message.body}', cfg
-        )
-        log.info(f'Received DM with no author. \n Subject: {message.subject}\n\nBody: {message.body}')
+        send_to_modchat(f"DM without author -- *{message.subject}*:\n{message.body}", cfg)

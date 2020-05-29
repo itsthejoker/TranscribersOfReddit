@@ -12,7 +12,7 @@ from tor.core.helpers import send_to_modchat, is_our_subreddit, _
 from tor.core.user_interaction import (process_claim, process_coc,
                                        process_done, process_message,
                                        process_thanks, process_unclaim,
-                                       process_wrong_post_location)
+                                       process_wrong_transcription_location)
 from tor.strings import translation
 
 MOD_SUPPORT_PHRASES = [
@@ -78,7 +78,7 @@ def process_reply(reply: Comment, cfg: Config) -> None:
             process_mod_intervention(reply, cfg)
 
         elif 'image transcription' in r_body or validation.contains_footer(reply, cfg):
-            process_wrong_post_location(reply, cfg)
+            process_wrong_transcription_location(reply)
 
         elif 'i accept' in r_body:
             process_coc(reply, cfg)
@@ -94,7 +94,7 @@ def process_reply(reply: Comment, cfg: Config) -> None:
             process_done(reply, cfg, alt_text_trigger=alt_text)
 
         elif 'thank' in r_body:  # trigger on "thanks" and "thank you"
-            process_thanks(reply, cfg)
+            process_thanks(reply)
 
         elif '!override' in r_body:
             process_override(reply, cfg)
