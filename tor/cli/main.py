@@ -108,14 +108,17 @@ def main():
     else:
         bot_name = os.environ.get('BOT_NAME', 'bot')
 
-    config.r = Reddit(bot_name)
+    config.r = Reddit(client_id="ID",
+                      client_secret="SECRET",
+                      user_agent="tor on /r/ModsOfToR, contact KwaaieDronk",
+                      username="NAME",
+                      password="PASSWORD")
     config.name = 'u/ToR'
     config.bot_version = __version__
     configure_logging(config)
     initialize(config)
     config.perform_header_check = True
     log.info('Bot built and initialized')
-
     tor.__SELF_NAME__ = config.r.user.me().name
     if tor.__SELF_NAME__ not in tor.__BOT_NAMES__:
         tor.__BOT_NAMES__.append(tor.__SELF_NAME__)

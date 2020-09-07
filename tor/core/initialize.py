@@ -74,8 +74,9 @@ def populate_subreddit_lists(cfg: Config) -> None:
     :return: None.
     """
 
-    cfg.subreddits_to_check = get_wiki_page('subreddits', cfg).splitlines()
-    cfg.subreddits_to_check = clean_list(cfg.subreddits_to_check)
+    # cfg.subreddits_to_check = get_wiki_page('subreddits', cfg).splitlines()
+    # cfg.subreddits_to_check = clean_list(cfg.subreddits_to_check)
+    cfg.subreddits_to_check = ["kierra"]
     log.debug(f'Created list of subreddits from wiki: {cfg.subreddits_to_check}')
 
     for line in get_wiki_page('subreddits/upvote-filtered', cfg).splitlines():
