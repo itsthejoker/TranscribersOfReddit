@@ -4,6 +4,7 @@ import time
 import logging
 
 from praw import Reddit  # type: ignore
+from dotenv import load_dotenv
 
 # The `import tor` lines is necessary because `tor.__SELF_NAME__` is
 # set here. Reason: https://gist.github.com/TheLonelyGhost/9dbe810c42d8f2edcf3388a8b19519e1
@@ -41,18 +42,27 @@ DEBUG_MODE = bool(os.getenv('DEBUG_MODE', ''))
 # List is in alphabetical order. Anyone who contributes to this
 # codebase is invited to add their tunes!
 #
+# Alec Benjamin
 # Alison Wonderland
+# Apashe
 # Aramanthe
+# Betty Who
+# blink-182
 # Braxton Burks
 # Caravan Palace
+# Daft Punk
 # David Bowie
+# Dorothy
 # Hiromi
 # Girl Talk
+# Green Day
 # Icon for Hire
 # Inverness
+# John Williams
 # K-391
 # Lady Gaga
 # Neon Hitch
+# Rage Against the Machine
 # The Beatles
 # The Killers
 # Two Door Cinema Club
@@ -61,14 +71,28 @@ DEBUG_MODE = bool(os.getenv('DEBUG_MODE', ''))
 # Streams:
 # https://www.youtube.com/watch?v=hX3j0sQ7ot8  # he's dead, Jim
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
+load_dotenv()
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument('--version', action='version', version=__version__)
-    parser.add_argument('--debug', action='store_true', default=DEBUG_MODE, help='Puts bot in dev-mode using non-prod credentials')
-    parser.add_argument('--noop', action='store_true', default=NOOP_MODE, help='Just run the daemon, but take no action (helpful for testing infrastructure changes)')
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        default=DEBUG_MODE,
+        help='Puts bot in dev-mode using non-prod credentials'
+    )
+    parser.add_argument(
+        '--noop',
+        action='store_true',
+        default=NOOP_MODE,
+        help=(
+            'Just run the daemon, but take no action (helpful for testing infrastructure'
+            ' changes)'
+        )
+    )
 
     return parser.parse_args()
 
@@ -91,30 +115,29 @@ def run(cfg):
     set_meta_flair_on_other_posts(cfg)
 
     if cfg.debug_mode:
-        time.sleep(60)
+        time.sleep(15)
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(levelname)s | %(funcName)s | %(message)s',
-        datefmt='%Y-%m-%dT%H:%M:%S',
-    )
-
+    configure_logging(config)
     config.debug_mode = DEBUG_MODE
 
     if config.debug_mode:
-        bot_name = 'debug'
+        bot_name = "debug"
     else:
-        bot_name = os.environ.get('BOT_NAME', 'bot')
+        bot_name = os.environ.get("BOT_NAME", "bot")
 
-    config.r = Reddit(bot_name)
-    config.name = 'u/ToR'
-    config.bot_version = __version__
-    configure_logging(config)
+    log.info(f"Connecting to Reddit as {bot_name}.")
+    config.r = Reddit(
+        user_agent=bot_name,
+        client_id=os.environ.get("REDDIT_CLIENT_ID", ""),
+        client_secret=os.environ.get("REDDIT_SECRET", ""),
+        username=os.environ.get("REDDIT_USERNAME", ""),
+        password=os.environ.get("REDDIT_PASSWORD", "")
+    )
     initialize(config)
     config.perform_header_check = True
-    log.info('Bot built and initialized')
+    log.info("Bot built and initialized")
 
     tor.__SELF_NAME__ = config.r.user.me().name
     if tor.__SELF_NAME__ not in tor.__BOT_NAMES__:
@@ -126,5 +149,5 @@ def main():
         run_until_dead(run)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
